@@ -470,7 +470,8 @@ const el={
   progressFill:$('progressFill'),progressStats:$('progressStats'),statusStrip:$('statusStrip'),
   proxyStatus:$('proxyStatus'),
 };
-const PROXY_BASE='http://127.0.0.1:8767';
+const LOCAL_PROXY_BASE='http://127.0.0.1:8767';
+let activeProxyBase='';
 let proxyReady=false;
 
 function toast(msg,dur=2800){
@@ -479,17 +480,32 @@ function toast(msg,dur=2800){
 }
 async function checkProxy(){
   if(!el.proxyStatus)return;
-  try{
-    const r=await fetch(PROXY_BASE+'/health',{cache:'no-store'});
-    const d=await r.json();
-    proxyReady=!!d.ok;
-  }catch{proxyReady=false;}
+  proxyReady=false;
+  activeProxyBase='';
+  const candidates=[];
+  if(location.protocol.startsWith('http')&&!/github\.io$/i.test(location.hostname))candidates.push('');
+  candidates.push(LOCAL_PROXY_BASE);
+  for(const base of candidates){
+    try{
+      const r=await fetch(base+'/api/health',{cache:'no-store'});
+      const d=await r.json();
+      if(d.ok){proxyReady=true;activeProxyBase=base;break;}
+    }catch{}
+    if(base===LOCAL_PROXY_BASE){
+      try{
+        const r=await fetch(base+'/health',{cache:'no-store'});
+        const d=await r.json();
+        if(d.ok){proxyReady=true;activeProxyBase=base;break;}
+      }catch{}
+    }
+  }
   el.proxyStatus.classList.toggle('ok',proxyReady);
   el.proxyStatus.classList.toggle('warn',!proxyReady);
-  el.proxyStatus.textContent=proxyReady?'本地代理已连接：网页导入和有道翻译可用':'未连接本地代理：双击「启动译言本地代理.bat」后再用网页导入/有道';
+  el.proxyStatus.textContent=proxyReady?(activeProxyBase?'本地代理已连接：网页导入和有道翻译可用':'云端代理已连接：网页导入和有道翻译可用'):'未连接代理：Netlify 版会自动连接；本地/GitHub Pages 请双击「启动译言本地代理.bat」';
 }
 async function proxyPost(path,payload){
-  const r=await fetch(PROXY_BASE+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const normalizedPath=activeProxyBase===LOCAL_PROXY_BASE?path.replace('/api/','/'):(path.startsWith('/api/')?path:'/api'+path);
+  const r=await fetch(activeProxyBase+normalizedPath,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const d=await r.json();
   if(!r.ok||d.ok===false)throw new Error(d.error||'本地代理请求失败');
   return d;
@@ -661,8 +677,8 @@ function importText(){
 
 // ── Translation ───────────────────────────────────────────────
 async function youdaoTranslate(text,appKey,appSecret){
-  if(!proxyReady)throw new Error('有道翻译需要本地代理：请双击「启动译言本地代理.bat」');
-  const d=await proxyPost('/youdao',{text,appKey,appSecret,from:'auto',to:'zh-CHS'});
+  if(!proxyReady)throw new Error('有道翻译需要代理：Netlify 版会自动连接，本地/GitHub Pages 请双击「启动译言本地代理.bat」');
+  const d=await proxyPost('/youdao',{text,appKey,appSecret:activeProxyBase===LOCAL_PROXY_BASE?appSecret:'',from:'auto',to:'zh-CHS'});
   return d.translation||'';
 }
 async function doTranslate(count,scope='next'){
@@ -680,7 +696,7 @@ async function doTranslate(count,scope='next'){
   for(let i=0;i<batch.length;i++){
     const seg=batch[i];toast('翻译第 '+seg.index+' 段（'+(i+1)+'/'+batch.length+'）…',9000);
     try{
-      if(provider==='youdao'&&appKey&&appSecret){
+      if(provider==='youdao'&&proxyReady&&(activeProxyBase!==LOCAL_PROXY_BASE||(appKey&&appSecret))){
         const zh=await youdaoTranslate(seg.source,appKey,appSecret);
         seg.literal=zh;seg.literary=zh;seg.status='translated';
       }else{

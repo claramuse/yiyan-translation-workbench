@@ -12,7 +12,22 @@ GitHub Pages 可以直接托管 `index.html`，适合做：
 - 备注、术语表、进度保存
 - 导出 HTML / TXT
 
-## 为什么还需要本地代理
+## 云端代理
+
+Netlify 部署会使用 `netlify/functions/api.mts` 提供：
+
+- `/api/health`
+- `/api/fetch-url`
+- `/api/youdao`
+
+有道秘钥应保存在 Netlify 环境变量中：
+
+- `YOUDAO_APP_KEY`
+- `YOUDAO_APP_SECRET`
+
+不要把有道应用秘钥写进 `index.html`、`netlify.toml` 或提交到 GitHub。
+
+## 为什么仍保留本地代理
 
 浏览器从 GitHub Pages 或本地 `file://` 页面直接请求 Gutenberg / 有道 API 时，会被 CORS 拦截。
 
@@ -23,8 +38,4 @@ GitHub Pages 可以直接托管 `index.html`，适合做：
 
 在 Windows 上双击 `start-local-proxy.bat`，页面就可以通过 `http://127.0.0.1:8767` 导入网页和调用有道翻译。
 
-如果要让任何设备打开网页都能直接翻译，需要把代理改成 Supabase Edge Function、Netlify Function 或 Cloudflare Worker，并把有道秘钥放在服务端环境变量里。
-
-## 安全提醒
-
-不要把有道应用秘钥写进 `index.html` 或提交到 GitHub。当前页面只在输入框里临时使用秘钥，不保存到文件。
+Netlify 版会优先使用云端代理；GitHub Pages / 本地文件版会继续使用本地代理。
