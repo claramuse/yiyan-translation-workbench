@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>译言翻译工作台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap"/>
+<style>
+:root{
+  --paper:#f7f4ed;--surface:#fffdf8;--surface-2:#f1eee6;
+  --ink:#1f2824;--muted:#68736d;--line:#d9ded7;--line-strong:#aab8ae;
+  --green:#3a9468;--green-mid:#4ab87c;--green-soft:#ccf0dc;
+  --amber:#b87020;--amber-soft:#fde8c0;
+  --blue:#3a80b8;--blue-soft:#cce4f8;
+  --red:#b84858;--red-soft:#f8d0d8;
+  --violet:#7050b0;--violet-soft:#e4d0f8;
+  --mac-rose:#f8c8d4;--mac-mint:#bcf0d8;
+  --mac-lemon:#f8f0a0;--mac-sky:#c0e4f8;--mac-lavender:#dccef8;
+  --shadow-sm:none;
+  --shadow:0 8px 28px rgba(34,43,37,.06);
+  --shadow-lg:0 20px 60px rgba(34,43,37,.14);
+  --radius:8px;
+  --topbar-bg:rgba(253,249,228,.96);
+  --font-ui:"Crimson Pro","Noto Serif SC","Microsoft YaHei",serif;
+  --font-cn:"Noto Serif SC","Microsoft YaHei",serif;
+}
+body.dark{
+  --paper:#111714;--surface:#1b2420;--surface-2:#161d1a;
+  --ink:#d8e8e2;--muted:#6a8c80;--line:#253028;--line-strong:#304038;
+  --green:#3ab87c;--green-mid:#45cc8c;--green-soft:rgba(58,184,124,.16);
+  --amber:#d4921e;--amber-soft:rgba(212,146,30,.16);
+  --blue:#4e9fd4;--blue-soft:rgba(78,159,212,.16);
+  --red:#d46b6a;--red-soft:rgba(212,107,106,.16);
+  --violet:#9a7fd4;--violet-soft:rgba(154,127,212,.16);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);
+  --shadow:0 8px 32px rgba(0,0,0,.4);
+  --shadow-lg:0 20px 60px rgba(0,0,0,.55);
+  --topbar-bg:rgba(22,29,26,.96);
+}
+body.dark .pane-source  textarea{background:#1e1c0a;color:#d8c870;}
+body.dark .pane-literal  textarea{background:#0c1820;}
+body.dark .pane-literary textarea{background:#0c1c12;}
+body.dark .final-band   textarea{background:#0c1a0e;}
+body.dark .final-header{background:linear-gradient(90deg,rgba(40,100,65,.32),var(--surface-2));}
+body.dark .topbar::after{opacity:.35;}
+body.dark dialog{background:var(--surface);}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-ui);font-size:15px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:3px;}
+button,input,select,textarea{font:inherit;}
+button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;padding:6px 12px;cursor:pointer;transition:background 130ms,transform 90ms,border-color 130ms,box-shadow 130ms;font-size:13.5px;white-space:nowrap;}
+button:hover{border-color:var(--green);box-shadow:var(--shadow-sm);transform:translateY(-1px);}
+button:active{transform:translateY(0);box-shadow:none;}
+button:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
+button.primary{background:var(--green);border-color:var(--green);color:#fff;}
+button.primary:hover{background:var(--green-mid);border-color:var(--green-mid);}
+button.ghost{background:transparent;border-color:transparent;}
+button.ghost:hover{border-color:var(--line);background:var(--surface-2);box-shadow:none;}
+button.danger{color:var(--red);}
+button.danger:hover{background:var(--red-soft);border-color:var(--red);box-shadow:none;}
+input,select,textarea{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--radius);min-width:0;transition:border-color 130ms,box-shadow 130ms;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(58,148,104,.12);}
+input,select{height:36px;padding:0 10px;}
+textarea{width:100%;resize:none;padding:13px;line-height:1.82;font-family:var(--font-cn);}
+.topbar{height:66px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--topbar-bg);backdrop-filter:blur(18px);position:sticky;top:0;z-index:20;overflow:hidden;}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2.5px;background:linear-gradient(90deg,var(--mac-rose),var(--mac-lemon),var(--mac-mint),var(--mac-sky),var(--mac-lavender));}
+.eyebrow{margin:0 0 2px;color:var(--green);font-size:9.5px;font-weight:700;letter-spacing:.18em;}
+h1,h2{margin:0;font-family:"Crimson Pro","Noto Serif SC",serif;}
+h1{font-size:19px;font-weight:600;}
+h2{font-size:16px;font-weight:600;}
+.toolbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.sep{width:1px;height:22px;background:var(--line);margin:0 2px;flex-shrink:0;}
+#themeBtn{padding:5px 9px;font-size:16px;line-height:1;}
+.workspace{height:calc(100% - 66px);display:grid;grid-template-columns:218px minmax(520px,1fr) 286px;min-height:0;}
+.rail,.inspector{min-height:0;overflow:hidden;padding:13px;border-right:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;}
+.inspector{border-right:0;border-left:1px solid var(--line);overflow-y:auto;}
+.rail-section{margin-bottom:13px;flex-shrink:0;}
+.rail-section.grow{flex:1;min-height:0;display:flex;flex-direction:column;}
+.progress-bar-wrap{height:4px;background:var(--line);border-radius:2px;margin-bottom:9px;overflow:hidden;flex-shrink:0;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green-mid));border-radius:2px;transition:width 380ms cubic-bezier(.25,1,.5,1);}
+.progress-stats{font-size:11px;color:var(--muted);margin-bottom:7px;display:flex;justify-content:space-between;flex-shrink:0;}
+.progress-stats strong{color:var(--green);}
+.section-label{margin-bottom:6px;color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;}
+.muted-line{color:var(--muted);margin:0 0 3px;font-size:12.5px;}
+#projectSelect{width:100%;}
+.segmented{display:flex;flex-wrap:wrap;gap:3px;}
+.segmented button{padding:3px 7px;font-size:11.5px;flex:1;min-width:38px;}
+.segmented button.active{background:var(--green-soft);border-color:var(--green);color:var(--green);font-weight:600;}
+.segment-list{list-style:none;padding:0;margin:0;overflow-y:auto;flex:1;}
+.segment-list li{display:grid;grid-template-columns:30px 1fr;gap:6px;min-height:46px;padding:6px 4px;border-bottom:1px solid var(--line);border-left:3px solid transparent;cursor:pointer;transition:background 110ms,border-left-color 110ms;}
+.segment-list li:hover{background:rgba(58,148,104,.05);}
+.segment-list li.active{background:var(--green-soft);border-left-color:var(--green);}
+.segment-list .num{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px;padding-top:2px;}
+.segment-list .preview{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:11.5px;line-height:1.44;font-family:var(--font-cn);}
+.segment-list li.todo{border-left-color:var(--amber);}
+.segment-list li.active.todo{background:var(--amber-soft);}
+.segment-list li.translated{border-left-color:var(--green);}
+.segment-list li.confirmed{border-left-color:var(--blue);}
+.segment-list li.active.confirmed{background:var(--blue-soft);}
+.segment-list li.question,.segment-list li.noted{border-left-color:var(--violet);}
+.segment-list li.active.question,.segment-list li.active.noted{background:var(--violet-soft);}
+.compare{min-height:0;display:flex;flex-direction:column;padding:11px 13px;overflow:hidden;gap:8px;}
+.compare-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;}
+.compare-head-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.translate-btn{background:linear-gradient(135deg,#1e7050,#3a9468);color:#fff;border-color:transparent;padding:6px 13px;font-size:13px;font-weight:600;box-shadow:0 2px 10px rgba(58,148,104,.3);}
+.translate-btn:hover{background:linear-gradient(135deg,#258060,#4ab87c);border-color:transparent;box-shadow:0 4px 16px rgba(58,148,104,.4);}
+.status-strip{display:flex;gap:3px;flex-shrink:0;}
+.status-strip button{padding:4px 8px;font-size:11.5px;}
+.status-strip button.active{font-weight:700;}
+.status-strip button[data-status="todo"].active{background:var(--amber-soft);border-color:var(--amber);color:var(--amber);}
+.status-strip button[data-status="translated"].active{background:var(--green-soft);border-color:var(--green);color:var(--green);}
+.status-strip button[data-status="confirmed"].active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
+.status-strip button[data-status="question"].active{background:var(--violet-soft);border-color:var(--violet);color:var(--violet);}
+.columns{min-height:0;flex:1;display:grid;grid-template-columns:repeat(3,minmax(230px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);overflow:hidden;}
+.pane,.final-band{min-height:0;display:flex;flex-direction:column;border-radius:0;overflow:hidden;border:0;box-shadow:none;background:var(--surface);}
+.pane-header{display:flex;align-items:center;gap:7px;padding:7px 10px;background:rgba(255,255,255,.42);border-bottom:1px solid var(--line);flex-shrink:0;}
+.pane-accent{width:3px;height:14px;border-radius:2px;flex-shrink:0;}
+.pane-accent--source{background:var(--amber);}
+.pane-accent--literal{background:var(--blue);}
+.pane-accent--literary{background:var(--green);}
+.pane-accent--final{background:linear-gradient(160deg,var(--green),var(--green-mid));width:4px;}
+.pane-title{font-weight:700;font-size:12.5px;}
+.pane-sub{font-size:10px;color:var(--muted);letter-spacing:.05em;flex:1;}
+.pane-copy-btn{padding:2px 7px;font-size:11px;color:var(--muted);border-color:var(--line);background:transparent;opacity:0;transition:opacity 120ms,color 120ms,background 120ms;}
+.pane:hover .pane-copy-btn{opacity:.6;}
+.pane-copy-btn:hover{opacity:1!important;color:var(--green);border-color:var(--green);background:var(--green-soft);box-shadow:none;transform:none;}
+.pane textarea{flex:1;min-height:200px;border:0;border-radius:0;box-shadow:none;background:transparent;}
+.pane-source  textarea{background:#fffce6;color:#28200e;}
+.pane-literal  textarea{background:#f0f8ff;}
+.pane-literary textarea{background:#edfff4;}
+.final-band{height:clamp(150px,22vh,240px);flex-shrink:0;border:1px solid var(--line);border-top:0;}
+.final-header{background:rgba(58,148,104,.12);}
+.final-band textarea{flex:1;border:0;border-radius:0;box-shadow:none;background:#f6fff0;font-weight:500;}
+#syncToggle.active{background:var(--mac-lemon);border-color:var(--amber);color:var(--amber);}
+.note-box{height:110px;margin-bottom:12px;}
+.term-row{display:grid;grid-template-columns:1fr 1fr auto;gap:5px;margin-bottom:8px;}
+.term-list{margin:0 0 12px;padding:0;list-style:none;}
+.term-list li{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line);font-size:12px;}
+.term-list li .term-pair{display:flex;gap:4px;flex:1;min-width:0;}
+.term-list li .term-source{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.term-list li .term-target{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.term-list li .del-term{padding:1px 5px;font-size:11px;opacity:0;border-color:transparent;background:transparent;color:var(--muted);transition:opacity 110ms;flex-shrink:0;}
+.term-list li:hover .del-term{opacity:1;}
+.term-list li .del-term:hover{color:var(--red);border-color:var(--red-soft);background:var(--red-soft);transform:none;box-shadow:none;}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px;}
+.action-grid button{min-height:32px;white-space:normal;font-size:12px;line-height:1.3;}
+.api-box{display:grid;gap:5px;}
+.api-box input,.api-box select{width:100%;}
+.proxy-status{font-size:11.5px;line-height:1.45;color:var(--muted);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:rgba(255,255,255,.35);}
+.proxy-status.ok{color:var(--green);border-color:var(--green);background:var(--green-soft);}
+.proxy-status.warn{color:var(--amber);border-color:var(--amber);background:var(--amber-soft);}
+.kbd-hint{display:inline-block;background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;padding:1px 5px;font-size:10.5px;color:var(--muted);font-family:monospace;}
+.shortcuts-hint{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);color:var(--muted);font-size:11.5px;line-height:2.1;}
+dialog{border:0;border-radius:14px;padding:0;box-shadow:var(--shadow-lg);width:min(720px,calc(100vw - 20px));background:var(--surface);}
+dialog::backdrop{background:rgba(10,16,12,.5);backdrop-filter:blur(7px);}
+.import-panel{display:grid;gap:12px;padding:20px;}
+.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.split-mode-label{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.split-mode-options{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.split-mode-options button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:9px 10px;text-align:left;height:auto;white-space:normal;}
+.split-mode-options button.active{background:var(--green-soft);border-color:var(--green);}
+.split-icon{font-size:16px;line-height:1;color:var(--muted);}
+.split-mode-options button.active .split-icon{color:var(--green);}
+.split-name{font-size:13px;font-weight:700;}
+.split-desc{font-size:11px;color:var(--muted);line-height:1.3;}
+.import-hint{margin:0;font-size:12px;color:var(--muted);line-height:1.6;padding:8px 10px;background:var(--mac-lemon);border-radius:6px;border-left:3px solid var(--amber);}
+.import-hint strong{color:#7a4a10;}
+.import-hint code{background:var(--amber-soft);padding:1px 4px;border-radius:3px;font-size:11px;}
+.import-tabs{display:flex;gap:5px;flex-wrap:wrap;}
+.import-tabs button.active{background:var(--green-soft);border-color:var(--green);color:var(--green);font-weight:600;}
+.import-tab{display:none;gap:8px;}
+.import-tab.active{display:grid;}
+.import-tab textarea{height:160px;}
+.import-tab input[type="file"]{height:auto;padding:7px 10px;cursor:pointer;}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(14px);opacity:0;background:#28200e;color:#fffef0;border-radius:10px;padding:9px 16px;font-size:13.5px;max-width:min(480px,calc(100vw - 20px));transition:opacity 180ms,transform 180ms cubic-bezier(.34,1.56,.64,1);pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:100;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+body.dark #toast{background:#cce4d8;color:#111714;}
+@media(max-width:1180px){.workspace{grid-template-columns:204px minmax(380px,1fr);}.inspector{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;height:auto;max-height:240px;border-left:0;border-top:1px solid var(--line);overflow:auto;}.inspector>*{flex:1;min-width:170px;}.columns{grid-template-columns:repeat(2,minmax(240px,1fr));}.pane-source{grid-column:1/-1;min-height:180px;}}
+@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.columns{grid-template-columns:1fr;}.pane-source{grid-column:auto;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{flex-wrap:wrap}.final-band{height:220px;}.toolbar{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <p class="eyebrow">YIYAN WORKBENCH</p>
+    <h1>译言翻译工作台</h1>
+  </div>
+  <div class="toolbar">
+    <button id="openImport" class="primary">＋ 导入</button>
+    <button id="saveCurrent">保存</button>
+    <div class="sep"></div>
+    <button id="exportJson">↓ 导出进度</button>
+    <button id="importJsonBtn">↑ 导入进度</button>
+    <input id="importJsonFile" type="file" accept=".json" style="display:none"/>
+    <div class="sep"></div>
+    <button id="exportHtml">导出 HTML</button>
+    <button id="exportTxt">导出 TXT</button>
+    <div class="sep"></div>
+    <button id="syncToggle">🔗 滚动同步</button>
+    <button id="themeBtn">🌙</button>
+  </div>
+</header>
+<main class="workspace">
+  <aside class="rail">
+    <div class="rail-section">
+      <div class="section-label">项目</div>
+      <select id="projectSelect"></select>
+      <div style="display:flex;gap:4px;margin-top:5px;">
+        <button id="deleteProject" class="ghost danger" style="flex:1;font-size:11.5px;">删除项目</button>
+      </div>
+    </div>
+    <div class="rail-section">
+      <div class="section-label">筛选</div>
+      <div class="segmented" id="filterBar">
+        <button data-filter="all" class="active">全部</button>
+        <button data-filter="todo">待译</button>
+        <button data-filter="translated">已译</button>
+        <button data-filter="confirmed">确认</button>
+        <button data-filter="noted">注释</button>
+      </div>
+    </div>
+    <div class="rail-section grow">
+      <div class="section-label">段落</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-stats" id="progressStats"><span>尚无进度</span></div>
+      <ol id="segmentList" class="segment-list"></ol>
+    </div>
+  </aside>
+  <section class="compare">
+    <div class="compare-head">
+      <div>
+        <p id="projectMeta" class="muted-line">还没有项目</p>
+        <h2 id="segmentTitle">导入一篇文本开始</h2>
+      </div>
+      <div class="compare-head-right">
+        <button id="translateCurrentMain" class="translate-btn" title="Ctrl+T">✦ AI 翻译</button>
+        <div class="status-strip" id="statusStrip">
+          <button data-status="todo">待译</button>
+          <button data-status="translated">已译</button>
+          <button data-status="confirmed">确认</button>
+          <button data-status="question">疑问</button>
+        </div>
+      </div>
+    </div>
+    <div class="columns">
+      <article class="pane pane-source">
+        <div class="pane-header">
+          <div class="pane-accent pane-accent--source"></div>
+          <span class="pane-title">原文</span><span class="pane-sub">Source</span>
+        </div>
+        <textarea id="sourceText" readonly></textarea>
+      </article>
+      <article class="pane pane-literal">
+        <div class="pane-header">
+          <div class="pane-accent pane-accent--literal"></div>
+          <span class="pane-title">忠实直译</span><span class="pane-sub">Literal</span>
+          <button class="pane-copy-btn" id="copyLiteralInline">→ 定稿</button>
+        </div>
+        <textarea id="literalText" placeholder="贴近原句结构的版本"></textarea>
+      </article>
+      <article class="pane pane-literary">
+        <div class="pane-header">
+          <div class="pane-accent pane-accent--literary"></div>
+          <span class="pane-title">文学润色</span><span class="pane-sub">Literary</span>
+          <button class="pane-copy-btn" id="copyLiteraryInline">→ 定稿</button>
+        </div>
+        <textarea id="literaryText" placeholder="更顺、更像中文文学文本的版本"></textarea>
+      </article>
+    </div>
+    <div class="final-band">
+      <div class="pane-header final-header">
+        <div class="pane-accent pane-accent--final"></div>
+        <span class="pane-title">我的定稿</span><span class="pane-sub">Final</span>
+      </div>
+      <textarea id="finalText" placeholder="最后确认的译文放这里……"></textarea>
+    </div>
+  </section>
+  <aside class="inspector">
+    <div class="section-label">备注</div>
+    <textarea id="noteText" class="note-box" placeholder="人物名、语气、版本选择……"></textarea>
+    <div class="section-label">术语表</div>
+    <div class="term-row">
+      <input id="termSource" placeholder="原词"/>
+      <input id="termTarget" placeholder="译法"/>
+      <button id="addTerm">＋</button>
+    </div>
+    <ul id="termList" class="term-list"></ul>
+    <div class="section-label">本段操作</div>
+    <div class="action-grid">
+      <button id="copyLiteral">直译→定稿</button>
+      <button id="copyLiterary">润色→定稿</button>
+      <button id="markNote">标为疑问</button>
+      <button id="clearDrafts">清空译文</button>
+    </div>
+    <div class="section-label">机器翻译</div>
+    <div class="api-box">
+      <select id="providerSelect">
+        <option value="youdao">有道翻译 NMT</option>
+        <option value="demo">演示模式（无需网络）</option>
+      </select>
+      <input id="youdaoAppKey" placeholder="应用 ID（本次临时使用，不保存）"/>
+      <input id="youdaoSecret" type="password" placeholder="应用秘钥（不保存到文件）"/>
+      <div class="proxy-status" id="proxyStatus">本地代理检测中…</div>
+      <div style="display:flex;gap:4px;">
+        <button id="translateCurrent" style="flex:1;">翻译当前段</button>
+        <button id="translateNextFive" style="flex:1;">后5段</button>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <button id="translateNextTwenty" style="flex:1;">后20段</button>
+        <button id="translateAllTodo" style="flex:1;">全部待译</button>
+      </div>
+    </div>
+    <div class="shortcuts-hint">
+      <div class="section-label" style="margin-top:0">快捷键</div>
+      <span class="kbd-hint">Ctrl+S</span> 保存&emsp;<span class="kbd-hint">↑↓</span> 切换段落<br/>
+      <span class="kbd-hint">Ctrl+Enter</span> 标为确认&emsp;<span class="kbd-hint">Ctrl+T</span> 翻译
+    </div>
+  </aside>
+</main>
+<dialog id="importDialog">
+  <form method="dialog" class="import-panel">
+    <div class="dialog-head">
+      <h2>导入文本</h2>
+      <button value="cancel" class="ghost">✕</button>
+    </div>
+    <div>
+      <div class="split-mode-label">拆分方式</div>
+      <div class="split-mode-options" id="splitModeBar">
+        <button type="button" data-mode="paragraph" class="active">
+          <span class="split-icon">¶</span><span class="split-name">按段落</span>
+          <span class="split-desc">自然段，适合散文</span>
+        </button>
+        <button type="button" data-mode="chapter">
+          <span class="split-icon">§</span><span class="split-name">按章节</span>
+          <span class="split-desc">h2/h3 标题，Gutenberg 首选</span>
+        </button>
+        <button type="button" data-mode="sentence">
+          <span class="split-icon">。</span><span class="split-name">按句子</span>
+          <span class="split-desc">每句一段，精细对照</span>
+        </button>
+      </div>
+      <input type="hidden" id="splitMode" value="paragraph"/>
+    </div>
+    <div class="import-tabs">
+      <button type="button" data-tab="htmlfile" class="active">📖 上传 HTML（推荐）</button>
+      <button type="button" data-tab="url">🌐 网址</button>
+      <button type="button" data-tab="word">📄 Word</button>
+      <button type="button" data-tab="text">✎ 粘贴文本</button>
+    </div>
+    <section class="import-tab active" data-panel="htmlfile">
+      <p class="import-hint">
+        <strong>解决 CORS 的正确姿势：</strong><br/>
+        在浏览器打开 Gutenberg 链接 → 按 <code>Ctrl+S</code> → 选「网页，仅 HTML」→ 上传这里。<br/>
+        自动识别 Gutenberg 的章节 / 段落结构，支持所有三种网址格式（cache/epub、files/-h.htm 等）。
+      </p>
+      <input id="htmlFileInput" type="file" accept=".html,.htm"/>
+      <input id="htmlTitle" placeholder="书名（可选，留空自动从页面 title 读取）"/>
+      <button type="button" id="importHtmlFile" class="primary">解析并导入</button>
+    </section>
+    <section class="import-tab" data-panel="url">
+      <p class="import-hint"><strong>注意：</strong>本地打开 HTML 文件时浏览器会阻止跨域请求。<br/>现在此入口会走「译言本地代理」；如果提示未连接，请先双击同目录的「启动译言本地代理.bat」。</p>
+      <input id="urlInput" value="https://www.gutenberg.org/cache/epub/4060/pg4060.html" placeholder="粘贴古登堡网址"/>
+      <button type="button" id="importUrl" class="primary">尝试导入</button>
+    </section>
+    <section class="import-tab" data-panel="word">
+      <input id="wordFile" type="file" accept=".docx"/>
+      <p class="import-hint">上传 .docx，推荐「按段落」拆分。</p>
+      <button type="button" id="importWord" class="primary">导入 Word</button>
+    </section>
+    <section class="import-tab" data-panel="text">
+      <input id="textTitle" placeholder="标题（可选）"/>
+      <textarea id="pasteText" placeholder="把原文粘贴到这里……"></textarea>
+      <button type="button" id="importText" class="primary">导入</button>
+    </section>
+  </form>
+</dialog>
+<div id="toast" role="status"></div>
+<script>
+var MD5=function(d){var r=M(V(Y(X(d),8*d.length)));return r.toLowerCase()};function M(d){for(var _,m="0123456789ABCDEF",f="",r=0;r<d.length;r++)_=d.charCodeAt(r),f+=m.charAt(_>>>4&15)+m.charAt(15&_);return f}function X(d){for(var _=Array(d.length>>2),m=0;m<_.length;m++)_[m]=0;for(m=0;m<8*d.length;m+=8)_[m>>5]|=(255&d.charCodeAt(m/8))<<m%32;return _}function V(d){for(var _="",m=0;m<32*d.length;m+=8)_+=String.fromCharCode(d[m>>5]>>>m%32&255);return _}function Y(d,_){d[_>>5]|=128<<_%32,d[14+(_+64>>>9<<4)]=_;for(var m=1732584193,f=-271733879,r=-1732584194,i=271733878,n=0;n<d.length;n+=16){var h=m,t=f,g=r,e=i;f=md5_ii(f=md5_ii(f=md5_ii(f=md5_ii(f=md5_hh(f=md5_hh(f=md5_hh(f=md5_hh(f=md5_gg(f=md5_gg(f=md5_gg(f=md5_gg(f=md5_ff(f=md5_ff(f=md5_ff(f=md5_ff(f,r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+0],7,-680876936),f,r,d[n+1],12,-389564586),m,f,d[n+2],17,606105819),i,m,d[n+3],22,-1044525330),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+4],7,-176418897),f,r,d[n+5],12,1200080426),m,f,d[n+6],17,-1473231341),i,m,d[n+7],22,-45705983),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+8],7,1770035416),f,r,d[n+9],12,-1958414417),m,f,d[n+10],17,-42063),i,m,d[n+11],22,-1990404162),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+12],7,1804603682),f,r,d[n+13],12,-40341101),m,f,d[n+14],17,-1502002290),i,m,d[n+15],22,1236535329),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+1],5,-165796510),f,r,d[n+6],9,-1069501632),m,f,d[n+11],14,643717713),i,m,d[n+0],20,-373897302),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+5],5,-701558691),f,r,d[n+10],9,38016083),m,f,d[n+15],14,-660478335),i,m,d[n+4],20,-405537848),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+9],5,568446438),f,r,d[n+14],9,-1019803690),m,f,d[n+3],14,-187363961),i,m,d[n+8],20,1163531501),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+13],5,-1444681467),f,r,d[n+2],9,-51403784),m,f,d[n+7],14,1735328473),i,m,d[n+12],20,-1926607734),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+5],4,-378558),f,r,d[n+8],11,-2022574463),m,f,d[n+11],16,1839030562),i,m,d[n+14],23,-35309556),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+1],4,-1530992060),f,r,d[n+4],11,1272893353),m,f,d[n+7],16,-155497632),i,m,d[n+10],23,-1094730640),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+13],4,681279174),f,r,d[n+0],11,-358537222),m,f,d[n+3],16,-722521979),i,m,d[n+6],23,76029189),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+9],4,-640364487),f,r,d[n+12],11,-421815835),m,f,d[n+15],16,530742520),i,m,d[n+2],23,-995338651),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+0],6,-198630844),f,r,d[n+7],10,1126891415),m,f,d[n+14],15,-1416354905),i,m,d[n+5],21,-57434055),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+12],6,1700485571),f,r,d[n+3],10,-1894986606),m,f,d[n+10],15,-1051523),i,m,d[n+1],21,-2054922799),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+8],6,1873313359),f,r,d[n+15],10,-30611744),m,f,d[n+6],15,-1560198380),i,m,d[n+13],21,1309151649),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+4],6,-145523070),f,r,d[n+11],10,-1120210379),m,f,d[n+2],15,718787259),i,m,d[n+9],21,-343485551),m=safe_add(m,h),f=safe_add(f,t),r=safe_add(r,g),i=safe_add(i,e)}return[m,f,r,i]}function md5_cmn(d,_,m,f,r,i){return safe_add(bit_rol(safe_add(safe_add(_,d),safe_add(f,i)),r),m)}function md5_ff(d,_,m,f,r,i,n){return md5_cmn(_&m|~_&f,d,_,r,i,n)}function md5_gg(d,_,m,f,r,i,n){return md5_cmn(_&f|m&~f,d,_,r,i,n)}function md5_hh(d,_,m,f,r,i,n){return md5_cmn(_^m^f,d,_,r,i,n)}function md5_ii(d,_,m,f,r,i,n){return md5_cmn(m^(_|~f),d,_,r,i,n)}function safe_add(d,_){var m=(65535&d)+(65535&_);return(d>>16)+(_>>16)+(m>>16)<<16|65535&m}function bit_rol(d,_){return d<<_|d>>>32-_}
+const LS_KEY='yiyan_v3';
+const loadStore=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY)||'{}')}catch{return{}}};
+const saveStore=s=>localStorage.setItem(LS_KEY,JSON.stringify(s));
+const getProjects=()=>(loadStore().projects||[]).map(p=>({...p}));
+function getProject(id){const s=loadStore();return s['p_'+id]?JSON.parse(JSON.stringify(s['p_'+id])):null;}
+function saveProject(p){
+  const s=loadStore();s['p_'+p.id]=p;
+  const meta={id:p.id,title:p.title,mode:p.mode,segment_count:p.segments.length,created:p.created};
+  const idx=(s.projects||[]).findIndex(x=>x.id===p.id);
+  if(idx>=0)s.projects[idx]=meta;else{s.projects=s.projects||[];s.projects.unshift(meta);}
+  saveStore(s);
+}
+function deleteProjectStore(id){const s=loadStore();s.projects=(s.projects||[]).filter(p=>p.id!==id);delete s['p_'+id];saveStore(s);}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+// ── Gutenberg HTML parser ─────────────────────────────────────
+function parseGutenbergHtml(html, mode, customTitle){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(html,'text/html');
+  // Strip noise
+  ['script','style','#pg-header','#pg-footer','.pg-boilerplate',
+   '.pg-start-separator','.pg-end-separator','nav',
+   '[class*="pgheader"]','[class*="pgfooter"]'
+  ].forEach(sel=>{try{doc.querySelectorAll(sel).forEach(e=>e.remove())}catch{}});
+
+  const rawTitle=customTitle||
+    doc.querySelector('h1,.title')?.textContent?.trim()?.slice(0,80)||
+    doc.querySelector('title')?.textContent?.replace(/gutenberg/gi,'').trim()?.slice(0,80)||
+    '未命名';
+
+  const body=doc.querySelector('#text,#content,.chapter,main,article')||doc.body;
+
+  if(mode==='chapter'){
+    const chunks=[];let buf=[];
+    const flush=()=>{if(buf.length){chunks.push(buf.join('\n\n'));buf=[];}};
+    const addText=n=>{
+      if(n.nodeType===3){const t=n.textContent.trim();if(t.length>2)buf.push(t);}
+      else if(n.nodeType===1){
+        const tag=n.nodeName.toUpperCase();
+        if(/^H[123]$/.test(tag)){flush();const h=n.textContent.trim();if(h)buf.push('▎ '+h);}
+        else if(tag==='P'||tag==='BLOCKQUOTE'){const t=n.textContent.replace(/\s+/g,' ').trim();if(t.length>15)buf.push(t);}
+        else if(tag==='DIV'){n.querySelectorAll('p,blockquote').forEach(p=>{const t=p.textContent.replace(/\s+/g,' ').trim();if(t.length>15)buf.push(t);});}
+        else{n.childNodes.forEach(addText);}
+      }
+    };
+    body.childNodes.forEach(addText);flush();
+    if(chunks.length>=3)return{title:rawTitle,chunks};
+    // fallback
+    return parseGutenbergHtml(html,'paragraph',customTitle);
+  }
+
+  // paragraph / sentence
+  const paras=[];
+  body.querySelectorAll('p,blockquote').forEach(p=>{
+    const t=p.textContent.replace(/\s+/g,' ').trim();
+    if(t.length>15)paras.push(t);
+  });
+
+  if(mode==='sentence'){
+    const all=paras.join(' ');
+    const sents=all.split(/(?<=[.!?;])\s+(?=[A-Z"'\u201C])/).map(s=>s.trim()).filter(s=>s.length>20);
+    return{title:rawTitle,chunks:sents.length>5?sents:paras};
+  }
+  return{title:rawTitle,chunks:paras.length>0?paras:[body.textContent.replace(/\s+/g,' ').trim().slice(0,9999)]};
+}
+
+function splitText(text,mode){
+  if(mode==='sentence')return text.split(/(?<=[.!?;…。！？；])\s+/).map(s=>s.trim()).filter(s=>s.length>15);
+  return text.split(/\n{2,}/).map(s=>s.replace(/\n/g,' ').trim()).filter(s=>s.length>0);
+}
+function makeProject(title,chunks,mode){
+  return{id:uid(),title:title||'未命名',mode,created:Date.now(),terms:[],
+    segments:chunks.map((src,i)=>({id:uid(),index:i+1,source:src,literal:'',literary:'',final:'',note:'',status:'todo'}))};
+}
+
+// ── State & elements ──────────────────────────────────────────
+const state={project:null,currentId:null,filter:'all',syncScroll:true,savingTimer:null};
+const $=id=>document.getElementById(id);
+const el={
+  projectSelect:$('projectSelect'),projectMeta:$('projectMeta'),segmentTitle:$('segmentTitle'),
+  segmentList:$('segmentList'),sourceText:$('sourceText'),literalText:$('literalText'),
+  literaryText:$('literaryText'),finalText:$('finalText'),noteText:$('noteText'),
+  toast:$('toast'),importDialog:$('importDialog'),splitMode:$('splitMode'),
+  urlInput:$('urlInput'),textTitle:$('textTitle'),pasteText:$('pasteText'),
+  termSource:$('termSource'),termTarget:$('termTarget'),termList:$('termList'),
+  providerSelect:$('providerSelect'),youdaoAppKey:$('youdaoAppKey'),youdaoSecret:$('youdaoSecret'),
+  progressFill:$('progressFill'),progressStats:$('progressStats'),statusStrip:$('statusStrip'),
+  proxyStatus:$('proxyStatus'),
+};
+const PROXY_BASE='http://127.0.0.1:8767';
+let proxyReady=false;
+
+function toast(msg,dur=2800){
+  el.toast.textContent=msg;el.toast.classList.add('show');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>el.toast.classList.remove('show'),dur);
+}
+async function checkProxy(){
+  if(!el.proxyStatus)return;
+  try{
+    const r=await fetch(PROXY_BASE+'/health',{cache:'no-store'});
+    const d=await r.json();
+    proxyReady=!!d.ok;
+  }catch{proxyReady=false;}
+  el.proxyStatus.classList.toggle('ok',proxyReady);
+  el.proxyStatus.classList.toggle('warn',!proxyReady);
+  el.proxyStatus.textContent=proxyReady?'本地代理已连接：网页导入和有道翻译可用':'未连接本地代理：双击「启动译言本地代理.bat」后再用网页导入/有道';
+}
+async function proxyPost(path,payload){
+  const r=await fetch(PROXY_BASE+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const d=await r.json();
+  if(!r.ok||d.ok===false)throw new Error(d.error||'本地代理请求失败');
+  return d;
+}
+
+// ── Scroll sync ───────────────────────────────────────────────
+let scrollLock=false;
+function setupScrollSync(){
+  const panes=[el.sourceText,el.literalText,el.literaryText,el.finalText];
+  panes.forEach(src=>{
+    src.addEventListener('scroll',()=>{
+      if(!state.syncScroll||scrollLock)return;
+      scrollLock=true;
+      const pct=src.scrollTop/Math.max(1,src.scrollHeight-src.clientHeight);
+      panes.forEach(tgt=>{if(tgt!==src)tgt.scrollTop=pct*Math.max(1,tgt.scrollHeight-tgt.clientHeight);});
+      requestAnimationFrame(()=>{scrollLock=false;});
+    });
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+const currentSeg=()=>!state.project?null:(state.project.segments.find(s=>s.id===state.currentId)||state.project.segments[0]||null);
+function visibleSegs(){
+  if(!state.project)return[];
+  if(state.filter==='all')return state.project.segments;
+  if(state.filter==='noted')return state.project.segments.filter(s=>s.note||s.status==='question');
+  return state.project.segments.filter(s=>s.status===state.filter);
+}
+function segClass(s){if(s.status==='confirmed')return'confirmed';if(s.status==='question')return'question';if(s.note)return'noted';if(s.status==='translated')return'translated';return'todo';}
+
+// ── Render ────────────────────────────────────────────────────
+function renderProjects(){
+  const ps=getProjects();el.projectSelect.innerHTML='';
+  if(!ps.length){el.projectSelect.innerHTML='<option>暂无项目</option>';return;}
+  ps.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.title+' ('+p.segment_count+')';o.selected=state.project&&state.project.id===p.id;el.projectSelect.append(o);});
+}
+function renderProgress(){
+  if(!state.project?.segments.length){el.progressFill.style.width='0%';el.progressStats.innerHTML='<span>尚无进度</span>';return;}
+  const segs=state.project.segments;
+  const confirmed=segs.filter(s=>s.status==='confirmed').length;
+  const translated=segs.filter(s=>s.status==='translated'||s.status==='confirmed').length;
+  el.progressFill.style.width=Math.round(confirmed/segs.length*100)+'%';
+  el.progressStats.innerHTML='<span>已确认 <strong>'+confirmed+'</strong>/'+segs.length+'</span><span>已译 '+translated+'</span>';
+}
+function renderSegments(){
+  el.segmentList.innerHTML='';
+  visibleSegs().forEach(seg=>{
+    const li=document.createElement('li');
+    li.className=segClass(seg)+(seg.id===state.currentId?' active':'');
+    li.dataset.id=seg.id;
+    li.innerHTML='<span class="num">'+seg.index+'</span><span class="preview"></span>';
+    li.querySelector('.preview').textContent=seg.source;
+    li.addEventListener('click',()=>{saveCurrentSeg(true);state.currentId=seg.id;render();});
+    el.segmentList.append(li);
+  });
+  el.segmentList.querySelector('.active')?.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function renderTerms(){
+  el.termList.innerHTML='';
+  (state.project?.terms||[]).forEach((t,i)=>{
+    const li=document.createElement('li');
+    li.innerHTML='<div class="term-pair"><span class="term-source"></span><span>→</span><strong class="term-target"></strong></div><button class="del-term ghost">✕</button>';
+    li.querySelector('.term-source').textContent=t.source;
+    li.querySelector('.term-target').textContent=t.target;
+    li.querySelector('.del-term').onclick=()=>{state.project.terms.splice(i,1);saveProjectState();renderTerms();toast('术语已删除');};
+    el.termList.append(li);
+  });
+}
+function renderStatusStrip(){
+  const s=currentSeg()?.status||'todo';
+  el.statusStrip.querySelectorAll('button[data-status]').forEach(b=>b.classList.toggle('active',b.dataset.status===s));
+}
+function renderEditor(){
+  const seg=currentSeg();
+  if(!state.project||!seg){
+    el.projectMeta.textContent='还没有项目';el.segmentTitle.textContent='导入一篇文本开始';
+    [el.sourceText,el.literalText,el.literaryText,el.finalText,el.noteText].forEach(a=>a.value='');
+    el.statusStrip.querySelectorAll('button').forEach(b=>b.classList.remove('active'));return;
+  }
+  state.currentId=seg.id;
+  const modeLabel={paragraph:'按段落',sentence:'按句子',chapter:'按章节'}[state.project.mode]||'';
+  el.projectMeta.textContent=state.project.title+' · '+state.project.segments.length+' 段 · '+modeLabel;
+  el.segmentTitle.textContent='第 '+seg.index+' 段';
+  el.sourceText.value=seg.source||'';el.literalText.value=seg.literal||'';
+  el.literaryText.value=seg.literary||'';el.finalText.value=seg.final||'';el.noteText.value=seg.note||'';
+  renderStatusStrip();
+}
+function render(){renderProjects();renderSegments();renderTerms();renderEditor();renderProgress();}
+
+// ── Save ──────────────────────────────────────────────────────
+function saveProjectState(){if(!state.project)return;saveProject(state.project);}
+function saveCurrentSeg(quiet=false){
+  const seg=currentSeg();if(!state.project||!seg)return;
+  seg.literal=el.literalText.value;seg.literary=el.literaryText.value;
+  seg.final=el.finalText.value;seg.note=el.noteText.value;
+  saveProjectState();renderSegments();renderProgress();
+  if(!quiet)toast('已保存 ✓');
+}
+function debounceSave(){clearTimeout(state.savingTimer);state.savingTimer=setTimeout(()=>saveCurrentSeg(true),600);}
+
+function navigate(dir){
+  if(!state.project)return;
+  const vis=visibleSegs();const idx=vis.findIndex(s=>s.id===state.currentId);
+  const next=vis[idx+dir];if(!next)return;
+  saveCurrentSeg(true);state.currentId=next.id;render();
+}
+function loadProject(id){const p=getProject(id);if(!p)return;state.project=p;state.currentId=p.segments[0]?.id||null;render();}
+
+// ── Import: HTML file ─────────────────────────────────────────
+async function importHtmlFile(){
+  const file=$('htmlFileInput').files[0];if(!file){toast('请先选择 HTML 文件');return;}
+  const html=await file.text();
+  const mode=el.splitMode.value;
+  const customTitle=$('htmlTitle').value.trim();
+  const{title,chunks}=parseGutenbergHtml(html,mode,customTitle);
+  if(!chunks.length){toast('未能从 HTML 提取段落，请检查文件');return;}
+  const project=makeProject(title,chunks,mode);
+  saveProject(project);state.project=project;state.currentId=project.segments[0]?.id||null;
+  $('importDialog').close();render();
+  toast('已导入《'+title+'》共 '+chunks.length+' 段 ✓');
+}
+
+// ── Import: URL ───────────────────────────────────────────────
+async function importUrl(){
+  const url=el.urlInput.value.trim();if(!url){toast('请填写网址');return;}
+  toast('正在下载页面…',12000);
+  let html;
+  if(proxyReady){
+    const data=await proxyPost('/fetch-url',{url});
+    html=data.html;
+  }else{
+    try{const r=await fetch(url);if(r.ok)html=await r.text();}catch{}
+  }
+  if(!html){toast('网址导入需要本地代理。请双击「启动译言本地代理.bat」，或切到「上传 HTML」。',6000);return;}
+  const mode=el.splitMode.value;
+  const{title,chunks}=parseGutenbergHtml(html,mode,'');
+  if(!chunks.length){toast('未提取到段落，请改用上传 HTML');return;}
+  const project=makeProject(title,chunks,mode);
+  saveProject(project);state.project=project;state.currentId=project.segments[0]?.id||null;
+  $('importDialog').close();render();toast('已导入《'+title+'》共 '+chunks.length+' 段 ✓');
+}
+
+// ── Import: Word ──────────────────────────────────────────────
+async function importWord(){
+  const file=$('wordFile').files[0];if(!file){toast('请先选择 .docx 文件');return;}
+  if(!window.mammoth){
+    toast('正在加载 Word 解析库…',12000);
+    await new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';s.onload=res;s.onerror=rej;document.head.append(s);});
+  }
+  const result=await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()});
+  const mode=el.splitMode.value==='chapter'?'paragraph':el.splitMode.value;
+  const chunks=splitText(result.value,mode);
+  if(!chunks.length){toast('Word 文件未提取到文本');return;}
+  const project=makeProject(file.name.replace('.docx',''),chunks,mode);
+  saveProject(project);state.project=project;state.currentId=project.segments[0]?.id||null;
+  $('importDialog').close();render();toast('已导入《'+project.title+'》共 '+chunks.length+' 段 ✓');
+}
+
+// ── Import: Text ──────────────────────────────────────────────
+function importText(){
+  const raw=el.pasteText.value.trim();if(!raw){toast('请粘贴文本');return;}
+  const mode=el.splitMode.value==='chapter'?'paragraph':el.splitMode.value;
+  const chunks=splitText(raw,mode);
+  const title=el.textTitle.value.trim()||raw.split('\n')[0].slice(0,50);
+  const project=makeProject(title,chunks,mode);
+  saveProject(project);state.project=project;state.currentId=project.segments[0]?.id||null;
+  $('importDialog').close();render();toast('已导入共 '+chunks.length+' 段 ✓');
+}
+
+// ── Translation ───────────────────────────────────────────────
+async function youdaoTranslate(text,appKey,appSecret){
+  if(!proxyReady)throw new Error('有道翻译需要本地代理：请双击「启动译言本地代理.bat」');
+  const d=await proxyPost('/youdao',{text,appKey,appSecret,from:'auto',to:'zh-CHS'});
+  return d.translation||'';
+}
+async function doTranslate(count,scope='next'){
+  if(!state.project||!state.currentId){toast('请先选择段落');return;}
+  saveCurrentSeg(true);
+  const startIdx=state.project.segments.findIndex(s=>s.id===state.currentId);
+  const isTodo=s=>!(s.literal||s.literary||s.final)&&s.status!=='confirmed';
+  let batch;
+  if(scope==='allTodo')batch=state.project.segments.filter(isTodo);
+  else batch=state.project.segments.slice(startIdx,startIdx+count).filter(s=>scope==='force'||isTodo(s)||count===1);
+  if(!batch.length){toast('这批里没有待译段落 ✓');return;}
+  const provider=el.providerSelect.value;
+  const appKey=el.youdaoAppKey.value.trim();
+  const appSecret=el.youdaoSecret.value.trim();
+  for(let i=0;i<batch.length;i++){
+    const seg=batch[i];toast('翻译第 '+seg.index+' 段（'+(i+1)+'/'+batch.length+'）…',9000);
+    try{
+      if(provider==='youdao'&&appKey&&appSecret){
+        const zh=await youdaoTranslate(seg.source,appKey,appSecret);
+        seg.literal=zh;seg.literary=zh;seg.status='translated';
+      }else{
+        seg.literal='[直译占位] '+seg.source.slice(0,60)+'…';
+        seg.literary='[润色占位] '+seg.source.slice(0,60)+'…';
+        seg.status='translated';
+      }
+      const ri=state.project.segments.findIndex(s=>s.id===seg.id);
+      if(ri>=0)state.project.segments[ri]=seg;
+    }catch(e){toast('翻译出错：'+e.message);break;}
+  }
+  const last=batch[batch.length-1];
+  const next=state.project.segments.slice(state.project.segments.findIndex(s=>s.id===last.id)+1).find(isTodo);
+  if(next)state.currentId=next.id;
+  saveProjectState();render();toast('已处理 '+batch.length+' 段 ✓');
+}
+
+// ── Export ────────────────────────────────────────────────────
+function exportJson(){
+  const blob=new Blob([JSON.stringify(loadStore(),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='译言进度_'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('进度已导出 ✓');
+}
+function importJsonFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      saveStore({...loadStore(),...data});
+      const ps=getProjects();if(ps.length)loadProject(ps[0].id);else render();
+      toast('进度已恢复，共 '+ps.length+' 个项目 ✓');
+    }catch{toast('JSON 格式错误');}
+  };
+  reader.readAsText(file);
+}
+const escHtml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function exportHtmlFile(){
+  if(!state.project){toast('无项目');return;}saveCurrentSeg(true);
+  const rows=state.project.segments.map(s=>'<div class="seg"><div class="src">'+escHtml(s.source)+'</div><div class="fin">'+escHtml(s.final||s.literary||s.literal||'—')+'</div></div>').join('');
+  const html='<!doctype html><html><head><meta charset="utf-8"/><title>'+escHtml(state.project.title)+'</title><style>body{font:16px/1.9 "Noto Serif SC",serif;max-width:940px;margin:40px auto;padding:0 20px;background:#fdf9e4;}h1{color:#3a9468;}.seg{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:16px 0;border-bottom:1px solid #e6d9a8;}.src{color:#7a6e50;}.fin{font-weight:600;}</style></head><body><h1>'+escHtml(state.project.title)+'</h1>'+rows+'</body></html>';
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.project.title+'_对照.html';a.click();toast('HTML 已导出 ✓');
+}
+function exportTxt(){
+  if(!state.project){toast('无项目');return;}saveCurrentSeg(true);
+  const txt=state.project.segments.filter(s=>s.final||s.literary||s.literal).map(s=>s.final||s.literary||s.literal).join('\n\n');
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.project.title+'_译稿.txt';a.click();toast('TXT 已导出 ✓');
+}
+
+// ── Theme ─────────────────────────────────────────────────────
+function initTheme(){if(localStorage.getItem('yiyan_theme')==='dark'){document.body.classList.add('dark');$('themeBtn').textContent='☀️';}}
+function toggleTheme(){const d=document.body.classList.toggle('dark');$('themeBtn').textContent=d?'☀️':'🌙';localStorage.setItem('yiyan_theme',d?'dark':'light');}
+
+// ── Events ────────────────────────────────────────────────────
+$('openImport').onclick=()=>$('importDialog').showModal();
+$('saveCurrent').onclick=()=>saveCurrentSeg(false);
+$('themeBtn').onclick=toggleTheme;
+$('exportJson').onclick=exportJson;
+$('importJsonBtn').onclick=()=>$('importJsonFile').click();
+$('importJsonFile').onchange=e=>importJsonFile(e.target.files[0]);
+$('exportHtml').onclick=exportHtmlFile;
+$('exportTxt').onclick=exportTxt;
+$('syncToggle').onclick=()=>{state.syncScroll=!state.syncScroll;$('syncToggle').classList.toggle('active',state.syncScroll);toast(state.syncScroll?'🔗 滚动同步已开':'🔗 滚动同步已关');};
+$('deleteProject').onclick=()=>{
+  if(!state.project||!confirm('确定删除「'+state.project.title+'」？'))return;
+  deleteProjectStore(state.project.id);state.project=null;state.currentId=null;
+  const ps=getProjects();if(ps.length)loadProject(ps[0].id);else render();toast('项目已删除');
+};
+$('importHtmlFile').onclick=()=>importHtmlFile().catch(e=>toast(e.message));
+$('importUrl').onclick=()=>importUrl().catch(e=>toast(e.message));
+$('importWord').onclick=()=>importWord().catch(e=>toast(e.message));
+$('importText').onclick=()=>importText();
+el.projectSelect.onchange=e=>loadProject(e.target.value);
+[el.literalText,el.literaryText,el.finalText,el.noteText].forEach(a=>a.addEventListener('input',debounceSave));
+$('filterBar').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-filter]');if(!btn)return;
+  state.filter=btn.dataset.filter;
+  $('filterBar').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));
+  renderSegments();
+});
+el.statusStrip.addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-status]');if(!btn||!state.project)return;
+  const seg=currentSeg();if(!seg)return;
+  saveCurrentSeg(true);seg.status=btn.dataset.status;saveProjectState();render();toast('已标为「'+btn.textContent+'」');
+});
+function wireCopy(id,src){const b=$(id);if(!b)return;b.onclick=()=>{el.finalText.value=src.value;debounceSave();toast(src===el.literalText?'直译 → 定稿':'润色 → 定稿');};}
+wireCopy('copyLiteral',el.literalText);wireCopy('copyLiterary',el.literaryText);
+wireCopy('copyLiteralInline',el.literalText);wireCopy('copyLiteraryInline',el.literaryText);
+$('markNote').onclick=()=>{const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.status='question';saveProjectState();render();toast('已标为疑问');};
+$('clearDrafts').onclick=()=>{el.literalText.value=el.literaryText.value=el.finalText.value='';debounceSave();toast('已清空译文');};
+$('addTerm').onclick=()=>{
+  if(!state.project)return;
+  const src=el.termSource.value.trim(),tgt=el.termTarget.value.trim();if(!src||!tgt)return;
+  state.project.terms.push({source:src,target:tgt});el.termSource.value=el.termTarget.value='';
+  saveProjectState();renderTerms();toast('术语已添加');
+};
+[el.termSource,el.termTarget].forEach(inp=>inp.addEventListener('keydown',e=>{if(e.key==='Enter')$('addTerm').click();}));
+document.querySelectorAll('.import-tabs button').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.import-tabs button').forEach(b=>b.classList.toggle('active',b===btn));
+    document.querySelectorAll('.import-tab').forEach(p=>p.classList.toggle('active',p.dataset.panel===btn.dataset.tab));
+  };
+});
+document.querySelectorAll('#splitModeBar button').forEach(btn=>{
+  btn.onclick=()=>{document.querySelectorAll('#splitModeBar button').forEach(b=>b.classList.toggle('active',b===btn));el.splitMode.value=btn.dataset.mode;};
+});
+const doTranslateCurrent=()=>doTranslate(1).catch(e=>toast(e.message));
+$('translateCurrent').onclick=doTranslateCurrent;
+$('translateCurrentMain').onclick=doTranslateCurrent;
+$('translateNextFive').onclick=()=>doTranslate(5).catch(e=>toast(e.message));
+$('translateNextTwenty').onclick=()=>doTranslate(20).catch(e=>toast(e.message));
+$('translateAllTodo').onclick=()=>doTranslate(9999,'allTodo').catch(e=>toast(e.message));
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.key==='s'){e.preventDefault();saveCurrentSeg(false);}
+  if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.status='confirmed';saveProjectState();render();toast('已确认 ✓');}
+  if(e.ctrlKey&&e.key==='t'){e.preventDefault();doTranslate(1).catch(e2=>toast(e2.message));}
+  if(!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+    if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();navigate(1);}
+    if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();navigate(-1);}
+  }
+});
+initTheme();
+setupScrollSync();
+$('syncToggle').classList.toggle('active',state.syncScroll);
+checkProxy();
+setInterval(checkProxy,5000);
+const ps=getProjects();if(ps.length)loadProject(ps[0].id);else render();
+</script>
+</body>
+</html>
