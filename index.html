@@ -84,6 +84,8 @@ h2{font-size:16px;font-weight:600;}
 .rail-section.grow{flex:1;min-height:0;display:flex;flex-direction:column;}
 .project-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
 .project-actions button{padding:5px 6px;font-size:11.5px;}
+.cloud-sync{display:grid;gap:4px;margin-top:7px;}
+.cloud-sync input{width:100%;font-size:11.5px;padding:6px 7px;}
 .progress-bar-wrap{height:4px;background:var(--line);border-radius:2px;margin-bottom:9px;overflow:hidden;flex-shrink:0;}
 .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green-mid));border-radius:2px;transition:width 380ms cubic-bezier(.25,1,.5,1);}
 .progress-stats{font-size:11px;color:var(--muted);margin-bottom:7px;display:flex;justify-content:space-between;flex-shrink:0;}
@@ -225,6 +227,13 @@ body.dark #toast{background:#cce4d8;color:#111714;}
         <button id="importBackup" class="ghost">导入备份</button>
       </div>
       <input id="backupFileInput" type="file" accept="application/json,.json" hidden/>
+      <div class="cloud-sync">
+        <input id="cloudSyncKey" type="password" placeholder="云同步码，自己取一个"/>
+        <div class="project-actions">
+          <button id="saveCloud" class="ghost">存到云端</button>
+          <button id="loadCloud" class="ghost">从云端取回</button>
+        </div>
+      </div>
       <div style="display:flex;gap:4px;margin-top:5px;">
         <button id="deleteProject" class="ghost danger" style="flex:1;font-size:11.5px;">删除项目</button>
       </div>
@@ -543,6 +552,7 @@ const el={
   progressFill:$('progressFill'),progressStats:$('progressStats'),statusStrip:$('statusStrip'),
   proxyStatus:$('proxyStatus'),translationStatus:$('translationStatus'),localCredentialFields:$('localCredentialFields'),
   museCheerText:$('museCheerText'),questionToggle:$('questionToggle'),sentenceViewToggle:$('sentenceViewToggle'),
+  cloudSyncKey:$('cloudSyncKey'),
 };
 const museCheers=[
   '慢慢来，今天每确认一段，都在把书页点亮一点点。',
@@ -556,6 +566,7 @@ function cheerMuse(index=Math.floor(Math.random()*museCheers.length)){
   if(el.museCheerText)el.museCheerText.textContent=museCheers[index%museCheers.length];
 }
 const LOCAL_PROXY_BASE='http://127.0.0.1:8767';
+const SUPABASE_SYNC_URL='https://jzlfixgwdannipbljjhx.supabase.co/functions/v1/yiyan-sync';
 let activeProxyBase='';
 let proxyReady=false;
 
@@ -911,6 +922,45 @@ async function importBackupFile(){
     input.value='';
   }
 }
+function getCloudKey(){
+  const key=el.cloudSyncKey.value.trim();
+  if(!key){toast('先填一个云同步码');return'';}
+  if(key.length<4){toast('云同步码至少 4 位');return'';}
+  localStorage.setItem('yiyan_sync_key',key);
+  return key;
+}
+async function cloudPost(action,extra={}){
+  const syncKey=getCloudKey();
+  if(!syncKey)return null;
+  const response=await fetch(SUPABASE_SYNC_URL,{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action,syncKey,...extra})
+  });
+  const data=await response.json().catch(()=>({ok:false,error:'云端返回格式不对'}));
+  if(!response.ok||!data.ok)throw new Error(data.error||'云同步失败');
+  return data;
+}
+async function saveCloudStore(){
+  saveCurrentSeg(true);
+  const store=loadStore();
+  const count=(store.projects||[]).length;
+  if(!count){toast('暂无项目可同步');return;}
+  const data=await cloudPost('save',{store});
+  if(data)toast('已存到云端：'+count+' 个项目 ✓');
+}
+async function loadCloudStore(){
+  const data=await cloudPost('load');
+  if(!data)return;
+  if(!data.found){toast('这个同步码还没有云存档');return;}
+  const count=(data.store?.projects||[]).length;
+  if(!count){toast('云端存档是空的');return;}
+  if(!confirm('从云端取回会合并项目；同一个项目会用云端版本覆盖本机。继续吗？'))return;
+  const result=mergeBackupStore(data.store);
+  state.project=null;state.currentId=null;
+  if(result.firstId)loadProject(result.firstId);else render();
+  toast('已从云端取回 '+result.count+' 个项目 ✓');
+}
 
 // ── Theme ─────────────────────────────────────────────────────
 function initTheme(){if(localStorage.getItem('yiyan_theme')==='dark'){document.body.classList.add('dark');$('themeBtn').textContent='☀️';}}
@@ -925,6 +975,8 @@ $('exportTxt').onclick=exportTxt;
 $('exportBackup').onclick=exportBackupFile;
 $('importBackup').onclick=()=>$('backupFileInput').click();
 $('backupFileInput').onchange=()=>importBackupFile();
+$('saveCloud').onclick=()=>saveCloudStore().catch(e=>toast('云端保存失败：'+e.message));
+$('loadCloud').onclick=()=>loadCloudStore().catch(e=>toast('云端读取失败：'+e.message));
 $('deleteProject').onclick=()=>{
   if(!state.project||!confirm('确定删除「'+state.project.title+'」？'))return;
   deleteProjectStore(state.project.id);state.project=null;state.currentId=null;
@@ -993,6 +1045,7 @@ document.addEventListener('keydown',e=>{
   }
 });
 initTheme();
+el.cloudSyncKey.value=localStorage.getItem('yiyan_sync_key')||'';
 setupScrollSync();
 checkProxy();
 cheerMuse(0);
