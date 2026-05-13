@@ -141,7 +141,6 @@ h2{font-size:16px;font-weight:600;}
 .pane-source  textarea{background:#fffce6;color:#28200e;}
 .pane-api textarea{background:#f0f8ff;}
 .pane-draft textarea{background:#f6fff0;font-weight:500;}
-#syncToggle.active{background:var(--mac-lemon);border-color:var(--amber);color:var(--amber);}
 .note-box{height:110px;margin-bottom:12px;}
 .term-row{display:grid;grid-template-columns:1fr 1fr auto;gap:5px;margin-bottom:8px;}
 .term-list{margin:0 0 12px;padding:0;list-style:none;}
@@ -208,14 +207,8 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     <button id="openImport" class="primary">＋ 导入</button>
     <button id="saveCurrent">保存</button>
     <div class="sep"></div>
-    <button id="exportJson">↓ 导出进度</button>
-    <button id="importJsonBtn">↑ 导入进度</button>
-    <input id="importJsonFile" type="file" accept=".json" style="display:none"/>
-    <div class="sep"></div>
     <button id="exportHtml">导出 HTML</button>
     <button id="exportTxt">导出 TXT</button>
-    <div class="sep"></div>
-    <button id="syncToggle">🔗 滚动同步</button>
     <button id="themeBtn">🌙</button>
   </div>
 </header>
@@ -313,8 +306,6 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     <div class="action-grid">
       <button id="copyApi">机翻带入当前稿</button>
       <button id="saveSnapshot">保存草稿快照</button>
-      <button id="markReview">标为待复查</button>
-      <button id="clearDrafts">清空当前稿</button>
     </div>
     <div class="section-label">修改记录</div>
     <div id="snapshotList" class="snapshot-list"></div>
@@ -331,18 +322,13 @@ body.dark #toast{background:#cce4d8;color:#111714;}
       <div class="proxy-status" id="proxyStatus">本地代理检测中…</div>
       <div class="translation-status" id="translationStatus">云端版会把机翻直接填进中间的「API 机翻参考」。</div>
       <div style="display:flex;gap:4px;">
-        <button id="translateCurrent" style="flex:1;">翻译当前段</button>
-        <button id="translateNextFive" style="flex:1;">后5段</button>
+        <button id="translateCurrent" style="flex:1;">当前段</button>
+        <button id="translateNextFive" style="flex:1;">连续 5 段</button>
       </div>
       <div style="display:flex;gap:4px;">
-        <button id="translateNextTwenty" style="flex:1;">后20段</button>
-        <button id="translateAllTodo" style="flex:1;">全部待译</button>
+        <button id="translateNextTwenty" style="flex:1;">连续 20 段</button>
+        <button id="translateAllTodo" style="flex:1;">全部未机翻</button>
       </div>
-    </div>
-    <div class="shortcuts-hint">
-      <div class="section-label" style="margin-top:0">快捷键</div>
-      <span class="kbd-hint">Ctrl+S</span> 保存&emsp;<span class="kbd-hint">↑↓</span> 切换段落<br/>
-      <span class="kbd-hint">Ctrl+Enter</span> 标为确认&emsp;<span class="kbd-hint">Ctrl+T</span> 翻译
     </div>
   </aside>
 </main>
@@ -816,24 +802,6 @@ async function doTranslate(count,scope='next'){
 }
 
 // ── Export ────────────────────────────────────────────────────
-function exportJson(){
-  const blob=new Blob([JSON.stringify(loadStore(),null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='译言进度_'+new Date().toISOString().slice(0,10)+'.json';a.click();toast('进度已导出 ✓');
-}
-function importJsonFile(file){
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    try{
-      const data=JSON.parse(e.target.result);
-      saveStore({...loadStore(),...data});
-      const ps=getProjects();if(ps.length)loadProject(ps[0].id);else render();
-      toast('进度已恢复，共 '+ps.length+' 个项目 ✓');
-    }catch{toast('JSON 格式错误');}
-  };
-  reader.readAsText(file);
-}
 const escHtml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function exportHtmlFile(){
   if(!state.project){toast('无项目');return;}saveCurrentSeg(true);
@@ -857,12 +825,8 @@ function toggleTheme(){const d=document.body.classList.toggle('dark');$('themeBt
 $('openImport').onclick=()=>$('importDialog').showModal();
 $('saveCurrent').onclick=()=>saveCurrentSeg(false);
 $('themeBtn').onclick=toggleTheme;
-$('exportJson').onclick=exportJson;
-$('importJsonBtn').onclick=()=>$('importJsonFile').click();
-$('importJsonFile').onchange=e=>importJsonFile(e.target.files[0]);
 $('exportHtml').onclick=exportHtmlFile;
 $('exportTxt').onclick=exportTxt;
-$('syncToggle').onclick=()=>{state.syncScroll=!state.syncScroll;$('syncToggle').classList.toggle('active',state.syncScroll);toast(state.syncScroll?'🔗 滚动同步已开':'🔗 滚动同步已关');};
 $('deleteProject').onclick=()=>{
   if(!state.project||!confirm('确定删除「'+state.project.title+'」？'))return;
   deleteProjectStore(state.project.id);state.project=null;state.currentId=null;
@@ -897,8 +861,6 @@ $('copyApi').onclick=copyApiToDraft;
 $('copyApiInline').onclick=copyApiToDraft;
 $('saveSnapshot').onclick=saveSnapshot;
 $('snapshotInline').onclick=saveSnapshot;
-$('markReview').onclick=()=>{const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.stage='review';saveProjectState();render();toast('已标为待复查');};
-$('clearDrafts').onclick=()=>{el.draftText.value='';debounceSave();toast('已清空当前稿');};
 $('questionToggle').onclick=()=>{const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.question=!seg.question;saveProjectState();render();toast(seg.question?'已标为有疑问':'已取消疑问标记');};
 $('addTerm').onclick=()=>{
   if(!state.project)return;
@@ -933,7 +895,6 @@ document.addEventListener('keydown',e=>{
 });
 initTheme();
 setupScrollSync();
-$('syncToggle').classList.toggle('active',state.syncScroll);
 checkProxy();
 cheerMuse(0);
 setInterval(checkProxy,5000);
