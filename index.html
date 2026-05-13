@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>译言翻译工作台</title>
-<link rel="icon" type="image/png" href="./assets/muse-chibi.png"/>
+<link rel="icon" type="image/png" href="./assets/muse-male-chibi.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap"/>
 <style>
@@ -40,10 +40,8 @@ body.dark{
   --topbar-bg:rgba(22,29,26,.96);
 }
 body.dark .pane-source  textarea{background:#1e1c0a;color:#d8c870;}
-body.dark .pane-literal  textarea{background:#0c1820;}
-body.dark .pane-literary textarea{background:#0c1c12;}
-body.dark .final-band   textarea{background:#0c1a0e;}
-body.dark .final-header{background:linear-gradient(90deg,rgba(40,100,65,.32),var(--surface-2));}
+body.dark .pane-api textarea{background:#0c1820;}
+body.dark .pane-draft textarea{background:#0c1a0e;}
 body.dark .topbar::after{opacity:.35;}
 body.dark dialog{background:var(--surface);}
 *{box-sizing:border-box;}
@@ -100,13 +98,17 @@ h2{font-size:16px;font-weight:600;}
 .segment-list li.active{background:var(--green-soft);border-left-color:var(--green);}
 .segment-list .num{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px;padding-top:2px;}
 .segment-list .preview{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:11.5px;line-height:1.44;font-family:var(--font-cn);}
-.segment-list li.todo{border-left-color:var(--amber);}
-.segment-list li.active.todo{background:var(--amber-soft);}
-.segment-list li.translated{border-left-color:var(--green);}
-.segment-list li.confirmed{border-left-color:var(--blue);}
-.segment-list li.active.confirmed{background:var(--blue-soft);}
-.segment-list li.question,.segment-list li.noted{border-left-color:var(--violet);}
-.segment-list li.active.question,.segment-list li.active.noted{background:var(--violet-soft);}
+.segment-mini-meta{display:flex;gap:4px;align-items:center;margin-top:3px;flex-wrap:wrap;}
+.mini-pill{display:inline-flex;align-items:center;min-height:16px;padding:0 5px;border-radius:999px;background:rgba(0,0,0,.05);color:var(--muted);font-size:10px;}
+.mini-pill.question{background:var(--red-soft);color:var(--red);}
+.segment-list li.pending{border-left-color:var(--amber);}
+.segment-list li.active.pending{background:var(--amber-soft);}
+.segment-list li.machine{border-left-color:var(--green);}
+.segment-list li.drafting{border-left-color:var(--blue);}
+.segment-list li.review{border-left-color:var(--violet);}
+.segment-list li.final{border-left-color:#2e8b68;}
+.segment-list li.active.final{background:var(--green-soft);}
+.segment-list li.question{box-shadow:inset 0 0 0 1px rgba(184,72,88,.38);}
 .compare{min-height:0;display:flex;flex-direction:column;padding:11px 13px;overflow:hidden;gap:8px;}
 .compare-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;}
 .compare-head-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
@@ -115,11 +117,13 @@ h2{font-size:16px;font-weight:600;}
 .status-strip{display:flex;gap:3px;flex-shrink:0;}
 .status-strip button{padding:4px 8px;font-size:11.5px;}
 .status-strip button.active{font-weight:700;}
-.status-strip button[data-status="todo"].active{background:var(--amber-soft);border-color:var(--amber);color:var(--amber);}
-.status-strip button[data-status="translated"].active{background:var(--green-soft);border-color:var(--green);color:var(--green);}
-.status-strip button[data-status="confirmed"].active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
-.status-strip button[data-status="question"].active{background:var(--violet-soft);border-color:var(--violet);color:var(--violet);}
-.columns{min-height:0;flex:1;display:grid;grid-template-columns:repeat(3,minmax(230px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);overflow:hidden;}
+.status-strip button[data-stage="pending"].active{background:var(--amber-soft);border-color:var(--amber);color:var(--amber);}
+.status-strip button[data-stage="drafting"].active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
+.status-strip button[data-stage="review"].active{background:var(--violet-soft);border-color:var(--violet);color:var(--violet);}
+.status-strip button[data-stage="final"].active{background:var(--green-soft);border-color:var(--green);color:var(--green);}
+.status-strip button[data-question].active{background:var(--red-soft);border-color:var(--red);color:var(--red);}
+.editor-layout{min-height:0;flex:1;display:grid;grid-template-columns:minmax(300px,.95fr) minmax(360px,1.15fr);gap:1px;background:var(--line);border:1px solid var(--line);overflow:hidden;}
+.editor-stack{min-height:0;display:grid;grid-template-rows:minmax(170px,.82fr) minmax(250px,1.18fr);gap:1px;background:var(--line);}
 .pane,.final-band{min-height:0;display:flex;flex-direction:column;border-radius:0;overflow:hidden;border:0;box-shadow:none;background:var(--surface);}
 .pane-header{display:flex;align-items:center;gap:7px;padding:7px 10px;background:rgba(255,255,255,.42);border-bottom:1px solid var(--line);flex-shrink:0;}
 .pane-accent{width:3px;height:14px;border-radius:2px;flex-shrink:0;}
@@ -130,15 +134,13 @@ h2{font-size:16px;font-weight:600;}
 .pane-title{font-weight:700;font-size:12.5px;}
 .pane-sub{font-size:10px;color:var(--muted);letter-spacing:.05em;flex:1;}
 .pane-copy-btn{padding:2px 7px;font-size:11px;color:var(--muted);border-color:var(--line);background:transparent;opacity:0;transition:opacity 120ms,color 120ms,background 120ms;}
-.pane:hover .pane-copy-btn{opacity:.6;}
+.pane-copy-btn.visible{opacity:.78;}
+.pane:hover .pane-copy-btn{opacity:.78;}
 .pane-copy-btn:hover{opacity:1!important;color:var(--green);border-color:var(--green);background:var(--green-soft);box-shadow:none;transform:none;}
 .pane textarea{flex:1;min-height:200px;border:0;border-radius:0;box-shadow:none;background:transparent;}
 .pane-source  textarea{background:#fffce6;color:#28200e;}
-.pane-literal  textarea{background:#f0f8ff;}
-.pane-literary textarea{background:#edfff4;}
-.final-band{height:clamp(150px,22vh,240px);flex-shrink:0;border:1px solid var(--line);border-top:0;}
-.final-header{background:rgba(58,148,104,.12);}
-.final-band textarea{flex:1;border:0;border-radius:0;box-shadow:none;background:#f6fff0;font-weight:500;}
+.pane-api textarea{background:#f0f8ff;}
+.pane-draft textarea{background:#f6fff0;font-weight:500;}
 #syncToggle.active{background:var(--mac-lemon);border-color:var(--amber);color:var(--amber);}
 .note-box{height:110px;margin-bottom:12px;}
 .term-row{display:grid;grid-template-columns:1fr 1fr auto;gap:5px;margin-bottom:8px;}
@@ -152,6 +154,12 @@ h2{font-size:16px;font-weight:600;}
 .term-list li .del-term:hover{color:var(--red);border-color:var(--red-soft);background:var(--red-soft);transform:none;box-shadow:none;}
 .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:12px;}
 .action-grid button{min-height:32px;white-space:normal;font-size:12px;line-height:1.3;}
+.snapshot-list{display:grid;gap:6px;margin-bottom:12px;}
+.snapshot-item{display:grid;gap:5px;padding:8px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.48);}
+.snapshot-meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:11px;}
+.snapshot-preview{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.snapshot-actions{display:flex;gap:5px;}
+.snapshot-actions button{padding:3px 7px;font-size:11px;}
 .api-box{display:grid;gap:5px;}
 .api-box input,.api-box select{width:100%;}
 .proxy-status{font-size:11.5px;line-height:1.45;color:var(--muted);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:rgba(255,255,255,.35);}
@@ -186,8 +194,8 @@ dialog::backdrop{background:rgba(10,16,12,.5);backdrop-filter:blur(7px);}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(14px);opacity:0;background:#28200e;color:#fffef0;border-radius:10px;padding:9px 16px;font-size:13.5px;max-width:min(480px,calc(100vw - 20px));transition:opacity 180ms,transform 180ms cubic-bezier(.34,1.56,.64,1);pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:100;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 body.dark #toast{background:#cce4d8;color:#111714;}
-@media(max-width:1180px){.workspace{grid-template-columns:204px minmax(380px,1fr);}.inspector{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;height:auto;max-height:240px;border-left:0;border-top:1px solid var(--line);overflow:auto;}.inspector>*{flex:1;min-width:170px;}.columns{grid-template-columns:repeat(2,minmax(240px,1fr));}.pane-source{grid-column:1/-1;min-height:180px;}}
-@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.columns{grid-template-columns:1fr;}.pane-source{grid-column:auto;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{flex-wrap:wrap}.final-band{height:220px;}.toolbar{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;}}
+@media(max-width:1180px){.workspace{grid-template-columns:204px minmax(380px,1fr);}.inspector{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;height:auto;max-height:260px;border-left:0;border-top:1px solid var(--line);overflow:auto;}.inspector>*{flex:1;min-width:170px;}.editor-layout{grid-template-columns:1fr;}.editor-stack{grid-template-rows:minmax(170px,.8fr) minmax(250px,1.2fr);}}
+@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{flex-wrap:wrap}.editor-layout{grid-template-columns:1fr;}.toolbar{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;}}
 </style>
 </head>
 <body>
@@ -224,10 +232,12 @@ body.dark #toast{background:#cce4d8;color:#111714;}
       <div class="section-label">筛选</div>
       <div class="segmented" id="filterBar">
         <button data-filter="all" class="active">全部</button>
-        <button data-filter="todo">待译</button>
-        <button data-filter="translated">已译</button>
-        <button data-filter="confirmed">确认</button>
-        <button data-filter="noted">注释</button>
+        <button data-filter="pending">待处理</button>
+        <button data-filter="machine">已有机翻</button>
+        <button data-filter="drafting">在改</button>
+        <button data-filter="review">待复查</button>
+        <button data-filter="final">已定稿</button>
+        <button data-filter="question">有疑问</button>
       </div>
     </div>
     <div class="rail-section grow">
@@ -244,16 +254,17 @@ body.dark #toast{background:#cce4d8;color:#111714;}
         <h2 id="segmentTitle">导入一篇文本开始</h2>
       </div>
       <div class="compare-head-right">
-        <button id="translateCurrentMain" class="translate-btn" title="Ctrl+T">✦ AI 翻译</button>
+        <button id="translateCurrentMain" class="translate-btn" title="Ctrl+T">✦ 机翻当前段</button>
         <div class="status-strip" id="statusStrip">
-          <button data-status="todo">待译</button>
-          <button data-status="translated">已译</button>
-          <button data-status="confirmed">确认</button>
-          <button data-status="question">疑问</button>
+          <button data-stage="pending">待处理</button>
+          <button data-stage="drafting">在改</button>
+          <button data-stage="review">待复查</button>
+          <button data-stage="final">已定稿</button>
+          <button id="questionToggle" data-question="toggle">？疑问</button>
         </div>
       </div>
     </div>
-    <div class="columns">
+    <div class="editor-layout">
       <article class="pane pane-source">
         <div class="pane-header">
           <div class="pane-accent pane-accent--source"></div>
@@ -261,34 +272,29 @@ body.dark #toast{background:#cce4d8;color:#111714;}
         </div>
         <textarea id="sourceText" readonly></textarea>
       </article>
-      <article class="pane pane-literal">
-        <div class="pane-header">
-          <div class="pane-accent pane-accent--literal"></div>
-          <span class="pane-title">忠实直译</span><span class="pane-sub">Literal</span>
-          <button class="pane-copy-btn" id="copyLiteralInline">→ 定稿</button>
-        </div>
-        <textarea id="literalText" placeholder="贴近原句结构的版本"></textarea>
-      </article>
-      <article class="pane pane-literary">
-        <div class="pane-header">
-          <div class="pane-accent pane-accent--literary"></div>
-          <span class="pane-title">文学润色</span><span class="pane-sub">Literary</span>
-          <button class="pane-copy-btn" id="copyLiteraryInline">→ 定稿</button>
-        </div>
-        <textarea id="literaryText" placeholder="更顺、更像中文文学文本的版本"></textarea>
-      </article>
-    </div>
-    <div class="final-band">
-      <div class="pane-header final-header">
-        <div class="pane-accent pane-accent--final"></div>
-        <span class="pane-title">我的定稿</span><span class="pane-sub">Final</span>
+      <div class="editor-stack">
+        <article class="pane pane-api">
+          <div class="pane-header">
+            <div class="pane-accent pane-accent--literal"></div>
+            <span class="pane-title">API 机翻参考</span><span class="pane-sub">Reference</span>
+            <button class="pane-copy-btn" id="copyApiInline">带入当前稿</button>
+          </div>
+          <textarea id="apiText" readonly placeholder="点击“机翻当前段”后，这里会直接出现参考译文。"></textarea>
+        </article>
+        <article class="pane pane-draft">
+          <div class="pane-header">
+            <div class="pane-accent pane-accent--final"></div>
+            <span class="pane-title">我的当前译稿</span><span class="pane-sub">Working draft</span>
+            <button class="pane-copy-btn visible" id="snapshotInline">保存快照</button>
+          </div>
+          <textarea id="draftText" placeholder="把你现在正在改的译文放这里。需要留痕时，点“保存快照”。"></textarea>
+        </article>
       </div>
-      <textarea id="finalText" placeholder="最后确认的译文放这里……"></textarea>
     </div>
   </section>
   <aside class="inspector">
     <section class="muse-cheer">
-      <img src="./assets/muse-chibi.png" alt="Muse 小助手"/>
+      <img src="./assets/muse-male-chibi.png" alt="Muse 小助手"/>
       <div>
         <div class="section-label">Muse 陪你翻</div>
         <p id="museCheerText">慢慢来，今天每确认一段，都在把书页点亮一点点。</p>
@@ -305,11 +311,13 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     <ul id="termList" class="term-list"></ul>
     <div class="section-label">本段操作</div>
     <div class="action-grid">
-      <button id="copyLiteral">直译→定稿</button>
-      <button id="copyLiterary">润色→定稿</button>
-      <button id="markNote">标为疑问</button>
-      <button id="clearDrafts">清空译文</button>
+      <button id="copyApi">机翻带入当前稿</button>
+      <button id="saveSnapshot">保存草稿快照</button>
+      <button id="markReview">标为待复查</button>
+      <button id="clearDrafts">清空当前稿</button>
     </div>
+    <div class="section-label">修改记录</div>
+    <div id="snapshotList" class="snapshot-list"></div>
     <div class="section-label">机器翻译</div>
     <div class="api-box">
       <select id="providerSelect">
@@ -321,7 +329,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
         <input id="youdaoSecret" type="password" placeholder="本地代理模式才需要填应用秘钥"/>
       </div>
       <div class="proxy-status" id="proxyStatus">本地代理检测中…</div>
-      <div class="translation-status" id="translationStatus">云端版会把机翻直接填进「直译 / 润色」两栏。</div>
+      <div class="translation-status" id="translationStatus">云端版会把机翻直接填进中间的「API 机翻参考」。</div>
       <div style="display:flex;gap:4px;">
         <button id="translateCurrent" style="flex:1;">翻译当前段</button>
         <button id="translateNextFive" style="flex:1;">后5段</button>
@@ -402,8 +410,25 @@ const LS_KEY='yiyan_v3';
 const loadStore=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY)||'{}')}catch{return{}}};
 const saveStore=s=>localStorage.setItem(LS_KEY,JSON.stringify(s));
 const getProjects=()=>(loadStore().projects||[]).map(p=>({...p}));
-function getProject(id){const s=loadStore();return s['p_'+id]?JSON.parse(JSON.stringify(s['p_'+id])):null;}
+function normalizeSegment(seg,i){
+  const legacyStage=seg.stage||(seg.status==='confirmed'?'final':seg.status==='question'?'review':seg.status==='translated'?'machine':'pending');
+  const apiTranslation=seg.apiTranslation||seg.api||seg.literal||seg.literary||'';
+  const draft=seg.draft||seg.currentDraft||seg.final||'';
+  const stage=draft&&legacyStage==='pending'?'drafting':legacyStage;
+  return{
+    id:seg.id||uid(),index:seg.index||i+1,source:seg.source||'',
+    apiTranslation,draft,note:seg.note||'',
+    snapshots:Array.isArray(seg.snapshots)?seg.snapshots:[],
+    stage,question:typeof seg.question==='boolean'?seg.question:seg.status==='question'
+  };
+}
+function normalizeProject(p){
+  if(!p)return null;
+  return{...p,terms:Array.isArray(p.terms)?p.terms:[],segments:(p.segments||[]).map(normalizeSegment)};
+}
+function getProject(id){const s=loadStore();return s['p_'+id]?normalizeProject(JSON.parse(JSON.stringify(s['p_'+id]))):null;}
 function saveProject(p){
+  p=normalizeProject(p);
   const s=loadStore();s['p_'+p.id]=p;
   const meta={id:p.id,title:p.title,mode:p.mode,segment_count:p.segments.length,created:p.created};
   const idx=(s.projects||[]).findIndex(x=>x.id===p.id);
@@ -470,7 +495,7 @@ function splitText(text,mode){
 }
 function makeProject(title,chunks,mode){
   return{id:uid(),title:title||'未命名',mode,created:Date.now(),terms:[],
-    segments:chunks.map((src,i)=>({id:uid(),index:i+1,source:src,literal:'',literary:'',final:'',note:'',status:'todo'}))};
+    segments:chunks.map((src,i)=>({id:uid(),index:i+1,source:src,apiTranslation:'',draft:'',note:'',snapshots:[],stage:'pending',question:false}))};
 }
 
 // ── State & elements ──────────────────────────────────────────
@@ -478,15 +503,15 @@ const state={project:null,currentId:null,filter:'all',syncScroll:true,savingTime
 const $=id=>document.getElementById(id);
 const el={
   projectSelect:$('projectSelect'),projectMeta:$('projectMeta'),segmentTitle:$('segmentTitle'),
-  segmentList:$('segmentList'),sourceText:$('sourceText'),literalText:$('literalText'),
-  literaryText:$('literaryText'),finalText:$('finalText'),noteText:$('noteText'),
+  segmentList:$('segmentList'),sourceText:$('sourceText'),apiText:$('apiText'),
+  draftText:$('draftText'),noteText:$('noteText'),snapshotList:$('snapshotList'),
   toast:$('toast'),importDialog:$('importDialog'),splitMode:$('splitMode'),
   urlInput:$('urlInput'),textTitle:$('textTitle'),pasteText:$('pasteText'),
   termSource:$('termSource'),termTarget:$('termTarget'),termList:$('termList'),
   providerSelect:$('providerSelect'),youdaoAppKey:$('youdaoAppKey'),youdaoSecret:$('youdaoSecret'),
   progressFill:$('progressFill'),progressStats:$('progressStats'),statusStrip:$('statusStrip'),
   proxyStatus:$('proxyStatus'),translationStatus:$('translationStatus'),localCredentialFields:$('localCredentialFields'),
-  museCheerText:$('museCheerText'),
+  museCheerText:$('museCheerText'),questionToggle:$('questionToggle'),
 };
 const museCheers=[
   '慢慢来，今天每确认一段，都在把书页点亮一点点。',
@@ -534,7 +559,7 @@ async function checkProxy(){
   el.localCredentialFields?.classList.toggle('hidden',proxyReady&&activeProxyBase!==LOCAL_PROXY_BASE);
   if(el.translationStatus){
     el.translationStatus.textContent=proxyReady&&activeProxyBase!==LOCAL_PROXY_BASE
-      ?'在线版不用填 key。机翻结果会直接落在「直译 / 润色」栏里。'
+      ?'在线版不用填 key。机翻结果会直接出现在中间的「API 机翻参考」。'
       :'本地代理版才需要填一次 key；网页不会把它写进项目文件。';
   }
 }
@@ -549,7 +574,7 @@ async function proxyPost(path,payload){
 // ── Scroll sync ───────────────────────────────────────────────
 let scrollLock=false;
 function setupScrollSync(){
-  const panes=[el.sourceText,el.literalText,el.literaryText,el.finalText];
+  const panes=[el.sourceText,el.apiText,el.draftText];
   panes.forEach(src=>{
     src.addEventListener('scroll',()=>{
       if(!state.syncScroll||scrollLock)return;
@@ -566,10 +591,10 @@ const currentSeg=()=>!state.project?null:(state.project.segments.find(s=>s.id===
 function visibleSegs(){
   if(!state.project)return[];
   if(state.filter==='all')return state.project.segments;
-  if(state.filter==='noted')return state.project.segments.filter(s=>s.note||s.status==='question');
-  return state.project.segments.filter(s=>s.status===state.filter);
+  if(state.filter==='question')return state.project.segments.filter(s=>s.question);
+  return state.project.segments.filter(s=>s.stage===state.filter);
 }
-function segClass(s){if(s.status==='confirmed')return'confirmed';if(s.status==='question')return'question';if(s.note)return'noted';if(s.status==='translated')return'translated';return'todo';}
+function segClass(s){return(s.stage||'pending')+(s.question?' question':'');}
 
 // ── Render ────────────────────────────────────────────────────
 function renderProjects(){
@@ -580,10 +605,11 @@ function renderProjects(){
 function renderProgress(){
   if(!state.project?.segments.length){el.progressFill.style.width='0%';el.progressStats.innerHTML='<span>尚无进度</span>';return;}
   const segs=state.project.segments;
-  const confirmed=segs.filter(s=>s.status==='confirmed').length;
-  const translated=segs.filter(s=>s.status==='translated'||s.status==='confirmed').length;
-  el.progressFill.style.width=Math.round(confirmed/segs.length*100)+'%';
-  el.progressStats.innerHTML='<span>已确认 <strong>'+confirmed+'</strong>/'+segs.length+'</span><span>已译 '+translated+'</span>';
+  const finalCount=segs.filter(s=>s.stage==='final').length;
+  const drafted=segs.filter(s=>s.draft).length;
+  const machine=segs.filter(s=>s.apiTranslation).length;
+  el.progressFill.style.width=Math.round(finalCount/segs.length*100)+'%';
+  el.progressStats.innerHTML='<span>已定稿 <strong>'+finalCount+'</strong>/'+segs.length+'</span><span>有稿 '+drafted+' · 机翻 '+machine+'</span>';
 }
 function renderSegments(){
   el.segmentList.innerHTML='';
@@ -591,7 +617,8 @@ function renderSegments(){
     const li=document.createElement('li');
     li.className=segClass(seg)+(seg.id===state.currentId?' active':'');
     li.dataset.id=seg.id;
-    li.innerHTML='<span class="num">'+seg.index+'</span><span class="preview"></span>';
+    const stageLabel={pending:'待处理',machine:'已有机翻',drafting:'在改',review:'待复查',final:'已定稿'}[seg.stage||'pending'];
+    li.innerHTML='<span class="num">'+seg.index+'</span><div><span class="preview"></span><div class="segment-mini-meta"><span class="mini-pill">'+stageLabel+'</span>'+(seg.question?'<span class="mini-pill question">有疑问</span>':'')+'</div></div>';
     li.querySelector('.preview').textContent=seg.source;
     li.addEventListener('click',()=>{saveCurrentSeg(true);state.currentId=seg.id;render();});
     el.segmentList.append(li);
@@ -609,23 +636,55 @@ function renderTerms(){
     el.termList.append(li);
   });
 }
+function formatSnapshotTime(ts){
+  try{return new Date(ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return'刚刚';}
+}
+function renderSnapshots(){
+  if(!el.snapshotList)return;
+  const seg=currentSeg();
+  const items=[...(seg?.snapshots||[])].slice().reverse();
+  el.snapshotList.innerHTML='';
+  if(!items.length){
+    el.snapshotList.innerHTML='<div class="snapshot-item"><div class="snapshot-preview">还没有快照。想保留一次修改痕迹时，点“保存草稿快照”。</div></div>';
+    return;
+  }
+  items.forEach(snap=>{
+    const wrap=document.createElement('div');
+    wrap.className='snapshot-item';
+    wrap.innerHTML='<div class="snapshot-meta"><span></span><span></span></div><div class="snapshot-preview"></div><div class="snapshot-actions"><button data-action="restore">恢复到当前稿</button><button data-action="remove">删除</button></div>';
+    wrap.querySelector('.snapshot-meta span:first-child').textContent=snap.label||'草稿快照';
+    wrap.querySelector('.snapshot-meta span:last-child').textContent=formatSnapshotTime(snap.createdAt);
+    wrap.querySelector('.snapshot-preview').textContent=snap.text||'';
+    wrap.querySelector('[data-action="restore"]').onclick=()=>{el.draftText.value=snap.text||'';saveCurrentSeg(true);toast('已恢复这版草稿');};
+    wrap.querySelector('[data-action="remove"]').onclick=()=>{
+      const list=currentSeg()?.snapshots||[];
+      const idx=list.findIndex(item=>item.id===snap.id);
+      if(idx>=0){list.splice(idx,1);saveProjectState();renderSnapshots();toast('快照已删除');}
+    };
+    el.snapshotList.append(wrap);
+  });
+}
 function renderStatusStrip(){
-  const s=currentSeg()?.status||'todo';
-  el.statusStrip.querySelectorAll('button[data-status]').forEach(b=>b.classList.toggle('active',b.dataset.status===s));
+  const seg=currentSeg();
+  const stage=seg?.stage||'pending';
+  el.statusStrip.querySelectorAll('button[data-stage]').forEach(b=>b.classList.toggle('active',b.dataset.stage===stage));
+  el.questionToggle?.classList.toggle('active',!!seg?.question);
 }
 function renderEditor(){
   const seg=currentSeg();
   if(!state.project||!seg){
     el.projectMeta.textContent='还没有项目';el.segmentTitle.textContent='导入一篇文本开始';
-    [el.sourceText,el.literalText,el.literaryText,el.finalText,el.noteText].forEach(a=>a.value='');
+    [el.sourceText,el.apiText,el.draftText,el.noteText].forEach(a=>a.value='');
+    if(el.snapshotList)el.snapshotList.innerHTML='';
     el.statusStrip.querySelectorAll('button').forEach(b=>b.classList.remove('active'));return;
   }
   state.currentId=seg.id;
   const modeLabel={paragraph:'按段落',sentence:'按句子',chapter:'按章节'}[state.project.mode]||'';
   el.projectMeta.textContent=state.project.title+' · '+state.project.segments.length+' 段 · '+modeLabel;
   el.segmentTitle.textContent='第 '+seg.index+' 段';
-  el.sourceText.value=seg.source||'';el.literalText.value=seg.literal||'';
-  el.literaryText.value=seg.literary||'';el.finalText.value=seg.final||'';el.noteText.value=seg.note||'';
+  el.sourceText.value=seg.source||'';el.apiText.value=seg.apiTranslation||'';
+  el.draftText.value=seg.draft||'';el.noteText.value=seg.note||'';
+  renderSnapshots();
   renderStatusStrip();
 }
 function render(){renderProjects();renderSegments();renderTerms();renderEditor();renderProgress();}
@@ -634,8 +693,8 @@ function render(){renderProjects();renderSegments();renderTerms();renderEditor()
 function saveProjectState(){if(!state.project)return;saveProject(state.project);}
 function saveCurrentSeg(quiet=false){
   const seg=currentSeg();if(!state.project||!seg)return;
-  seg.literal=el.literalText.value;seg.literary=el.literaryText.value;
-  seg.final=el.finalText.value;seg.note=el.noteText.value;
+  seg.draft=el.draftText.value;seg.note=el.noteText.value;
+  if(seg.draft&&seg.stage==='pending')seg.stage='drafting';
   saveProjectState();renderSegments();renderProgress();
   if(!quiet)toast('已保存 ✓');
   if(!quiet)cheerMuse();
@@ -721,7 +780,7 @@ async function doTranslate(count,scope='next'){
   if(!state.project||!state.currentId){toast('请先选择段落');return;}
   saveCurrentSeg(true);
   const startIdx=state.project.segments.findIndex(s=>s.id===state.currentId);
-  const isTodo=s=>!(s.literal||s.literary||s.final)&&s.status!=='confirmed';
+  const isTodo=s=>!s.apiTranslation&&s.stage!=='final';
   let batch;
   if(scope==='allTodo')batch=state.project.segments.filter(isTodo);
   else batch=state.project.segments.slice(startIdx,startIdx+count).filter(s=>scope==='force'||isTodo(s)||count===1);
@@ -736,24 +795,21 @@ async function doTranslate(count,scope='next'){
     try{
       if(provider==='youdao'&&proxyReady&&(activeProxyBase!==LOCAL_PROXY_BASE||(appKey&&appSecret))){
         const zh=await youdaoTranslate(seg.source,appKey,appSecret);
-        seg.literal=zh;seg.literary=zh;seg.status='translated';
+        seg.apiTranslation=zh;
+        if(seg.stage==='pending')seg.stage='machine';
       }else{
-        seg.literal='[直译占位] '+seg.source.slice(0,60)+'…';
-        seg.literary='[润色占位] '+seg.source.slice(0,60)+'…';
-        seg.status='translated';
+        seg.apiTranslation='[机翻占位] '+seg.source.slice(0,60)+'…';
+        if(seg.stage==='pending')seg.stage='machine';
       }
       const ri=state.project.segments.findIndex(s=>s.id===seg.id);
       if(ri>=0)state.project.segments[ri]=seg;
       done++;
     }catch(e){toast('翻译出错：'+e.message);break;}
   }
-  const last=batch[batch.length-1];
-  const next=state.project.segments.slice(state.project.segments.findIndex(s=>s.id===last.id)+1).find(isTodo);
-  if(next)state.currentId=next.id;
   saveProjectState();render();toast(done?'已填入 '+done+' 段机翻 ✓':'这次没有填入译文');
   if(el.translationStatus){
     el.translationStatus.textContent=done
-      ?'本轮已填入 '+done+' 段机翻。去左侧点已译段，就能看到直译 / 润色内容。'
+      ?'本轮已填入 '+done+' 段机翻。当前段的参考译文已经直接显示在中间。'
       :'这次没有成功填入译文，请看上方提示。';
   }
   if(done)cheerMuse(done);
@@ -781,14 +837,14 @@ function importJsonFile(file){
 const escHtml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function exportHtmlFile(){
   if(!state.project){toast('无项目');return;}saveCurrentSeg(true);
-  const rows=state.project.segments.map(s=>'<div class="seg"><div class="src">'+escHtml(s.source)+'</div><div class="fin">'+escHtml(s.final||s.literary||s.literal||'—')+'</div></div>').join('');
+  const rows=state.project.segments.map(s=>'<div class="seg"><div class="src">'+escHtml(s.source)+'</div><div class="fin">'+escHtml(s.draft||s.apiTranslation||'—')+'</div></div>').join('');
   const html='<!doctype html><html><head><meta charset="utf-8"/><title>'+escHtml(state.project.title)+'</title><style>body{font:16px/1.9 "Noto Serif SC",serif;max-width:940px;margin:40px auto;padding:0 20px;background:#fdf9e4;}h1{color:#3a9468;}.seg{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:16px 0;border-bottom:1px solid #e6d9a8;}.src{color:#7a6e50;}.fin{font-weight:600;}</style></head><body><h1>'+escHtml(state.project.title)+'</h1>'+rows+'</body></html>';
   const blob=new Blob([html],{type:'text/html'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.project.title+'_对照.html';a.click();toast('HTML 已导出 ✓');
 }
 function exportTxt(){
   if(!state.project){toast('无项目');return;}saveCurrentSeg(true);
-  const txt=state.project.segments.filter(s=>s.final||s.literary||s.literal).map(s=>s.final||s.literary||s.literal).join('\n\n');
+  const txt=state.project.segments.filter(s=>s.draft||s.apiTranslation).map(s=>s.draft||s.apiTranslation).join('\n\n');
   const blob=new Blob([txt],{type:'text/plain'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.project.title+'_译稿.txt';a.click();toast('TXT 已导出 ✓');
 }
@@ -817,7 +873,7 @@ $('importUrl').onclick=()=>importUrl().catch(e=>toast(e.message));
 $('importWord').onclick=()=>importWord().catch(e=>toast(e.message));
 $('importText').onclick=()=>importText();
 el.projectSelect.onchange=e=>loadProject(e.target.value);
-[el.literalText,el.literaryText,el.finalText,el.noteText].forEach(a=>a.addEventListener('input',debounceSave));
+[el.draftText,el.noteText].forEach(a=>a.addEventListener('input',debounceSave));
 $('filterBar').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-filter]');if(!btn)return;
   state.filter=btn.dataset.filter;
@@ -825,15 +881,25 @@ $('filterBar').addEventListener('click',e=>{
   renderSegments();
 });
 el.statusStrip.addEventListener('click',e=>{
-  const btn=e.target.closest('button[data-status]');if(!btn||!state.project)return;
+  const btn=e.target.closest('button[data-stage]');if(!btn||!state.project)return;
   const seg=currentSeg();if(!seg)return;
-  saveCurrentSeg(true);seg.status=btn.dataset.status;saveProjectState();render();toast('已标为「'+btn.textContent+'」');
+  saveCurrentSeg(true);seg.stage=btn.dataset.stage;saveProjectState();render();toast('已标为「'+btn.textContent+'」');
 });
-function wireCopy(id,src){const b=$(id);if(!b)return;b.onclick=()=>{el.finalText.value=src.value;debounceSave();toast(src===el.literalText?'直译 → 定稿':'润色 → 定稿');};}
-wireCopy('copyLiteral',el.literalText);wireCopy('copyLiterary',el.literaryText);
-wireCopy('copyLiteralInline',el.literalText);wireCopy('copyLiteraryInline',el.literaryText);
-$('markNote').onclick=()=>{const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.status='question';saveProjectState();render();toast('已标为疑问');};
-$('clearDrafts').onclick=()=>{el.literalText.value=el.literaryText.value=el.finalText.value='';debounceSave();toast('已清空译文');};
+function copyApiToDraft(){if(!el.apiText.value){toast('这段还没有机翻参考');return;}el.draftText.value=el.apiText.value;debounceSave();toast('已把机翻带入当前稿');}
+function saveSnapshot(){
+  const seg=currentSeg();if(!seg)return;
+  const text=el.draftText.value.trim();if(!text){toast('当前稿还是空的，先写一点再留快照');return;}
+  seg.snapshots=seg.snapshots||[];
+  seg.snapshots.push({id:uid(),text,label:'草稿 '+(seg.snapshots.length+1),createdAt:Date.now()});
+  saveCurrentSeg(true);renderSnapshots();toast('已保存一版草稿快照');
+}
+$('copyApi').onclick=copyApiToDraft;
+$('copyApiInline').onclick=copyApiToDraft;
+$('saveSnapshot').onclick=saveSnapshot;
+$('snapshotInline').onclick=saveSnapshot;
+$('markReview').onclick=()=>{const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.stage='review';saveProjectState();render();toast('已标为待复查');};
+$('clearDrafts').onclick=()=>{el.draftText.value='';debounceSave();toast('已清空当前稿');};
+$('questionToggle').onclick=()=>{const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.question=!seg.question;saveProjectState();render();toast(seg.question?'已标为有疑问':'已取消疑问标记');};
 $('addTerm').onclick=()=>{
   if(!state.project)return;
   const src=el.termSource.value.trim(),tgt=el.termTarget.value.trim();if(!src||!tgt)return;
@@ -858,7 +924,7 @@ $('translateNextTwenty').onclick=()=>doTranslate(20).catch(e=>toast(e.message));
 $('translateAllTodo').onclick=()=>doTranslate(9999,'allTodo').catch(e=>toast(e.message));
 document.addEventListener('keydown',e=>{
   if(e.ctrlKey&&e.key==='s'){e.preventDefault();saveCurrentSeg(false);}
-  if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.status='confirmed';saveProjectState();render();toast('已确认 ✓');}
+  if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.stage='final';saveProjectState();render();toast('已定稿 ✓');}
   if(e.ctrlKey&&e.key==='t'){e.preventDefault();doTranslate(1).catch(e2=>toast(e2.message));}
   if(!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
     if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();navigate(1);}
