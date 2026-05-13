@@ -159,6 +159,20 @@ h2{font-size:16px;font-weight:600;}
 .snapshot-preview{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .snapshot-actions{display:flex;gap:5px;}
 .snapshot-actions button{padding:3px 7px;font-size:11px;}
+.alignment-panel{display:grid;gap:8px;padding:10px;border:1px solid var(--line);background:rgba(255,255,255,.42);}
+.alignment-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.alignment-head p{margin:2px 0 0;color:var(--muted);font-size:12px;line-height:1.45;}
+.sentence-chips{display:flex;flex-wrap:wrap;gap:6px;max-height:92px;overflow:auto;padding-right:2px;}
+.sentence-chip{max-width:100%;padding:5px 8px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12px;line-height:1.35;white-space:normal;text-align:left;}
+.sentence-chip.active{border-color:var(--green);background:var(--green-soft);color:var(--green);}
+.alignment-detail{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:8px;}
+.alignment-card{min-height:98px;padding:8px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.56);}
+.alignment-copy{font-size:12.5px;line-height:1.6;white-space:pre-wrap;}
+.muted-copy{color:var(--muted);}
+.alignment-bind-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.binding-list{display:grid;gap:6px;}
+.binding-item{padding:6px 7px;border-radius:6px;background:rgba(58,148,104,.08);font-size:12px;line-height:1.5;}
+.binding-empty{color:var(--muted);font-size:12px;line-height:1.5;}
 .api-box{display:grid;gap:5px;}
 .api-box input,.api-box select{width:100%;}
 .proxy-status{font-size:11.5px;line-height:1.45;color:var(--muted);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:rgba(255,255,255,.35);}
@@ -194,7 +208,7 @@ dialog::backdrop{background:rgba(10,16,12,.5);backdrop-filter:blur(7px);}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 body.dark #toast{background:#cce4d8;color:#111714;}
 @media(max-width:1180px){.workspace{grid-template-columns:204px minmax(380px,1fr);}.inspector{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;height:auto;max-height:260px;border-left:0;border-top:1px solid var(--line);overflow:auto;}.inspector>*{flex:1;min-width:170px;}.editor-layout{grid-template-columns:1fr;}.editor-stack{grid-template-rows:minmax(170px,.8fr) minmax(250px,1.2fr);}}
-@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{flex-wrap:wrap}.editor-layout{grid-template-columns:1fr;}.toolbar{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;}}
+@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{flex-wrap:wrap}.editor-layout{grid-template-columns:1fr;}.alignment-detail{grid-template-columns:1fr;}.alignment-head{flex-direction:column;}.toolbar{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;}}
 </style>
 </head>
 <body>
@@ -284,6 +298,33 @@ body.dark #toast{background:#cce4d8;color:#111714;}
         </article>
       </div>
     </div>
+    <section class="alignment-panel">
+      <div class="alignment-head">
+        <div>
+          <div class="section-label">句段对照</div>
+          <p>点一句英文，看它的单句机翻；再选中当前中文稿里的片段，绑定到这句。</p>
+        </div>
+        <button id="translateFocusSentence" class="ghost">翻译所选句</button>
+      </div>
+      <div id="sentenceChips" class="sentence-chips"></div>
+      <div class="alignment-detail">
+        <article class="alignment-card">
+          <div class="section-label">当前英文句</div>
+          <div id="focusedSentenceText" class="alignment-copy">还没有选中句子。</div>
+        </article>
+        <article class="alignment-card">
+          <div class="section-label">这句的 API 机翻</div>
+          <div id="focusedSentenceTranslation" class="alignment-copy muted-copy">点击上方句子后可单独机翻。</div>
+        </article>
+        <article class="alignment-card">
+          <div class="alignment-bind-head">
+            <div class="section-label">绑定的人翻片段</div>
+            <button id="bindDraftSelection" class="ghost">绑定当前中文选区</button>
+          </div>
+          <div id="focusedBindingList" class="binding-list"></div>
+        </article>
+      </div>
+    </section>
   </section>
   <aside class="inspector">
     <section class="muse-cheer">
@@ -405,7 +446,9 @@ function normalizeSegment(seg,i){
     id:seg.id||uid(),index:seg.index||i+1,source:seg.source||'',
     apiTranslation,draft,note:seg.note||'',
     snapshots:Array.isArray(seg.snapshots)?seg.snapshots:[],
-    stage,question:typeof seg.question==='boolean'?seg.question:seg.status==='question'
+    stage,question:typeof seg.question==='boolean'?seg.question:seg.status==='question',
+    sentenceTranslations:seg.sentenceTranslations||{},
+    alignments:Array.isArray(seg.alignments)?seg.alignments:[]
   };
 }
 function normalizeProject(p){
@@ -498,6 +541,9 @@ const el={
   progressFill:$('progressFill'),progressStats:$('progressStats'),statusStrip:$('statusStrip'),
   proxyStatus:$('proxyStatus'),translationStatus:$('translationStatus'),localCredentialFields:$('localCredentialFields'),
   museCheerText:$('museCheerText'),questionToggle:$('questionToggle'),
+  sentenceChips:$('sentenceChips'),focusedSentenceText:$('focusedSentenceText'),
+  focusedSentenceTranslation:$('focusedSentenceTranslation'),focusedBindingList:$('focusedBindingList'),
+  translateFocusSentence:$('translateFocusSentence'),bindDraftSelection:$('bindDraftSelection'),
 };
 const museCheers=[
   '慢慢来，今天每确认一段，都在把书页点亮一点点。',
@@ -513,6 +559,7 @@ function cheerMuse(index=Math.floor(Math.random()*museCheers.length)){
 const LOCAL_PROXY_BASE='http://127.0.0.1:8767';
 let activeProxyBase='';
 let proxyReady=false;
+let focusedSentenceIndex=0;
 
 function toast(msg,dur=2800){
   el.toast.textContent=msg;el.toast.classList.add('show');
@@ -650,6 +697,55 @@ function renderSnapshots(){
     el.snapshotList.append(wrap);
   });
 }
+function splitSourceSentences(text){
+  const cleaned=(text||'').replace(/\s+/g,' ').trim();
+  if(!cleaned)return[];
+  const parts=cleaned.match(/[^.!?。！？]+[.!?。！？]?["'”’)]?/g)||[cleaned];
+  return parts.map(s=>s.trim()).filter(Boolean);
+}
+function focusedSentence(){
+  const seg=currentSeg();
+  const sentences=splitSourceSentences(seg?.source||'');
+  if(!sentences.length)return{sentences:[],text:'',index:0};
+  const index=Math.max(0,Math.min(focusedSentenceIndex,sentences.length-1));
+  return{sentences,text:sentences[index],index};
+}
+function renderBindings(){
+  if(!el.focusedBindingList)return;
+  const seg=currentSeg();
+  const {index}=focusedSentence();
+  const items=(seg?.alignments||[]).filter(item=>item.sentenceIndex===index);
+  el.focusedBindingList.innerHTML='';
+  if(!items.length){
+    el.focusedBindingList.innerHTML='<div class="binding-empty">还没有绑定。先在“我的当前译稿”里选中一段，再点“绑定当前中文选区”。</div>';
+    return;
+  }
+  items.forEach(item=>{
+    const row=document.createElement('div');
+    row.className='binding-item';
+    row.textContent=item.text||'';
+    el.focusedBindingList.append(row);
+  });
+}
+function renderSentenceFocus(){
+  if(!el.sentenceChips)return;
+  const seg=currentSeg();
+  const {sentences,text,index}=focusedSentence();
+  focusedSentenceIndex=index;
+  el.sentenceChips.innerHTML='';
+  sentences.forEach((sentence,i)=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='sentence-chip'+(i===index?' active':'');
+    btn.textContent=(i+1)+'. '+sentence;
+    btn.onclick=()=>{focusedSentenceIndex=i;renderSentenceFocus();};
+    el.sentenceChips.append(btn);
+  });
+  el.focusedSentenceText.textContent=text||'还没有选中句子。';
+  el.focusedSentenceTranslation.textContent=seg?.sentenceTranslations?.[index]||'点击“翻译所选句”即可单独机翻。';
+  el.focusedSentenceTranslation.classList.toggle('muted-copy',!seg?.sentenceTranslations?.[index]);
+  renderBindings();
+}
 function renderStatusStrip(){
   const seg=currentSeg();
   const stage=seg?.stage||'pending';
@@ -671,6 +767,7 @@ function renderEditor(){
   el.sourceText.value=seg.source||'';el.apiText.value=seg.apiTranslation||'';
   el.draftText.value=seg.draft||'';el.noteText.value=seg.note||'';
   renderSnapshots();
+  renderSentenceFocus();
   renderStatusStrip();
 }
 function render(){renderProjects();renderSegments();renderTerms();renderEditor();renderProgress();}
@@ -761,6 +858,34 @@ async function youdaoTranslate(text,appKey,appSecret){
   if(!proxyReady)throw new Error('有道翻译需要代理：Netlify 版会自动连接，本地/GitHub Pages 请双击「启动译言本地代理.bat」');
   const d=await proxyPost('/youdao',{text,appKey,appSecret:activeProxyBase===LOCAL_PROXY_BASE?appSecret:'',from:'auto',to:'zh-CHS'});
   return d.translation||'';
+}
+async function translateFocusedSentence(){
+  const seg=currentSeg();if(!seg){toast('请先选择段落');return;}
+  const {text,index}=focusedSentence();
+  if(!text){toast('这段没有可翻的句子');return;}
+  const provider=el.providerSelect.value;
+  const appKey=el.youdaoAppKey.value.trim();
+  const appSecret=el.youdaoSecret.value.trim();
+  if(provider!=='youdao'){toast('当前是演示模式');return;}
+  if(!proxyReady){toast('翻译服务还没连上');return;}
+  el.focusedSentenceTranslation.textContent='正在翻这句…';
+  try{
+    const zh=await youdaoTranslate(text,appKey,appSecret);
+    seg.sentenceTranslations=seg.sentenceTranslations||{};
+    seg.sentenceTranslations[index]=zh;
+    saveProjectState();renderSentenceFocus();toast('这句机翻好了');
+  }catch(e){toast('句子翻译出错：'+e.message);}
+}
+function bindCurrentDraftSelection(){
+  const seg=currentSeg();if(!seg){toast('请先选择段落');return;}
+  const {index}=focusedSentence();
+  const start=el.draftText.selectionStart??0;
+  const end=el.draftText.selectionEnd??0;
+  const text=el.draftText.value.slice(start,end).trim();
+  if(!text){toast('先在“我的当前译稿”里选中一小段');return;}
+  seg.alignments=seg.alignments||[];
+  seg.alignments.push({id:uid(),sentenceIndex:index,text,createdAt:Date.now()});
+  saveProjectState();renderBindings();toast('已绑定这段人翻');
 }
 async function doTranslate(count,scope='next'){
   if(!state.project||!state.currentId){toast('请先选择段落');return;}
@@ -861,6 +986,8 @@ $('copyApi').onclick=copyApiToDraft;
 $('copyApiInline').onclick=copyApiToDraft;
 $('saveSnapshot').onclick=saveSnapshot;
 $('snapshotInline').onclick=saveSnapshot;
+$('translateFocusSentence').onclick=()=>translateFocusedSentence();
+$('bindDraftSelection').onclick=bindCurrentDraftSelection;
 $('questionToggle').onclick=()=>{const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.question=!seg.question;saveProjectState();render();toast(seg.question?'已标为有疑问':'已取消疑问标记');};
 $('addTerm').onclick=()=>{
   if(!state.project)return;
