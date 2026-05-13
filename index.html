@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>译言翻译工作台</title>
+<link rel="icon" type="image/png" href="./assets/muse-chibi.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap"/>
 <style>
@@ -78,6 +79,9 @@ h2{font-size:16px;font-weight:600;}
 .workspace{height:calc(100% - 66px);display:grid;grid-template-columns:218px minmax(520px,1fr) 286px;min-height:0;}
 .rail,.inspector{min-height:0;overflow:hidden;padding:13px;border-right:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;}
 .inspector{border-right:0;border-left:1px solid var(--line);overflow-y:auto;}
+.muse-cheer{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:center;padding:10px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.58);}
+.muse-cheer img{width:62px;height:62px;border-radius:50%;object-fit:cover;display:block;border:1px solid rgba(58,148,104,.18);}
+.muse-cheer p{margin:2px 0 0;color:var(--ink);font-size:12.5px;line-height:1.55;}
 .rail-section{margin-bottom:13px;flex-shrink:0;}
 .rail-section.grow{flex:1;min-height:0;display:flex;flex-direction:column;}
 .progress-bar-wrap{height:4px;background:var(--line);border-radius:2px;margin-bottom:9px;overflow:hidden;flex-shrink:0;}
@@ -153,6 +157,9 @@ h2{font-size:16px;font-weight:600;}
 .proxy-status{font-size:11.5px;line-height:1.45;color:var(--muted);padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:rgba(255,255,255,.35);}
 .proxy-status.ok{color:var(--green);border-color:var(--green);background:var(--green-soft);}
 .proxy-status.warn{color:var(--amber);border-color:var(--amber);background:var(--amber-soft);}
+.translation-status{font-size:11.5px;line-height:1.5;color:var(--muted);padding:7px 8px;border-radius:6px;background:rgba(58,148,104,.08);}
+.local-credential-fields{display:grid;gap:5px;}
+.local-credential-fields.hidden{display:none;}
 .kbd-hint{display:inline-block;background:var(--paper);border:1px solid var(--line-strong);border-radius:4px;padding:1px 5px;font-size:10.5px;color:var(--muted);font-family:monospace;}
 .shortcuts-hint{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);color:var(--muted);font-size:11.5px;line-height:2.1;}
 dialog{border:0;border-radius:14px;padding:0;box-shadow:var(--shadow-lg);width:min(720px,calc(100vw - 20px));background:var(--surface);}
@@ -280,6 +287,13 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     </div>
   </section>
   <aside class="inspector">
+    <section class="muse-cheer">
+      <img src="./assets/muse-chibi.png" alt="Muse 小助手"/>
+      <div>
+        <div class="section-label">Muse 陪你翻</div>
+        <p id="museCheerText">慢慢来，今天每确认一段，都在把书页点亮一点点。</p>
+      </div>
+    </section>
     <div class="section-label">备注</div>
     <textarea id="noteText" class="note-box" placeholder="人物名、语气、版本选择……"></textarea>
     <div class="section-label">术语表</div>
@@ -302,9 +316,12 @@ body.dark #toast{background:#cce4d8;color:#111714;}
         <option value="youdao">有道翻译 NMT</option>
         <option value="demo">演示模式（无需网络）</option>
       </select>
-      <input id="youdaoAppKey" placeholder="应用 ID（本次临时使用，不保存）"/>
-      <input id="youdaoSecret" type="password" placeholder="应用秘钥（不保存到文件）"/>
+      <div id="localCredentialFields" class="local-credential-fields">
+        <input id="youdaoAppKey" placeholder="本地代理模式才需要填应用 ID"/>
+        <input id="youdaoSecret" type="password" placeholder="本地代理模式才需要填应用秘钥"/>
+      </div>
       <div class="proxy-status" id="proxyStatus">本地代理检测中…</div>
+      <div class="translation-status" id="translationStatus">云端版会把机翻直接填进「直译 / 润色」两栏。</div>
       <div style="display:flex;gap:4px;">
         <button id="translateCurrent" style="flex:1;">翻译当前段</button>
         <button id="translateNextFive" style="flex:1;">后5段</button>
@@ -468,8 +485,20 @@ const el={
   termSource:$('termSource'),termTarget:$('termTarget'),termList:$('termList'),
   providerSelect:$('providerSelect'),youdaoAppKey:$('youdaoAppKey'),youdaoSecret:$('youdaoSecret'),
   progressFill:$('progressFill'),progressStats:$('progressStats'),statusStrip:$('statusStrip'),
-  proxyStatus:$('proxyStatus'),
+  proxyStatus:$('proxyStatus'),translationStatus:$('translationStatus'),localCredentialFields:$('localCredentialFields'),
+  museCheerText:$('museCheerText'),
 };
+const museCheers=[
+  '慢慢来，今天每确认一段，都在把书页点亮一点点。',
+  '这一段已经更像中文了，漂亮。',
+  '先把意思稳稳接住，再让句子发光。',
+  '术语统一得很好，读者会偷偷感谢你。',
+  '翻译不是赶路，是把另一种语言牵过桥。',
+  '有疑问也很好，认真停一下就是在变准。'
+];
+function cheerMuse(index=Math.floor(Math.random()*museCheers.length)){
+  if(el.museCheerText)el.museCheerText.textContent=museCheers[index%museCheers.length];
+}
 const LOCAL_PROXY_BASE='http://127.0.0.1:8767';
 let activeProxyBase='';
 let proxyReady=false;
@@ -502,6 +531,12 @@ async function checkProxy(){
   el.proxyStatus.classList.toggle('ok',proxyReady);
   el.proxyStatus.classList.toggle('warn',!proxyReady);
   el.proxyStatus.textContent=proxyReady?(activeProxyBase?'本地代理已连接：网页导入和有道翻译可用':'云端代理已连接：网页导入和有道翻译可用'):'未连接代理：Netlify 版会自动连接；本地/GitHub Pages 请双击「启动译言本地代理.bat」';
+  el.localCredentialFields?.classList.toggle('hidden',proxyReady&&activeProxyBase!==LOCAL_PROXY_BASE);
+  if(el.translationStatus){
+    el.translationStatus.textContent=proxyReady&&activeProxyBase!==LOCAL_PROXY_BASE
+      ?'在线版不用填 key。机翻结果会直接落在「直译 / 润色」栏里。'
+      :'本地代理版才需要填一次 key；网页不会把它写进项目文件。';
+  }
 }
 async function proxyPost(path,payload){
   const normalizedPath=activeProxyBase===LOCAL_PROXY_BASE?path.replace('/api/','/'):(path.startsWith('/api/')?path:'/api'+path);
@@ -603,6 +638,7 @@ function saveCurrentSeg(quiet=false){
   seg.final=el.finalText.value;seg.note=el.noteText.value;
   saveProjectState();renderSegments();renderProgress();
   if(!quiet)toast('已保存 ✓');
+  if(!quiet)cheerMuse();
 }
 function debounceSave(){clearTimeout(state.savingTimer);state.savingTimer=setTimeout(()=>saveCurrentSeg(true),600);}
 
@@ -693,8 +729,10 @@ async function doTranslate(count,scope='next'){
   const provider=el.providerSelect.value;
   const appKey=el.youdaoAppKey.value.trim();
   const appSecret=el.youdaoSecret.value.trim();
+  let done=0;
   for(let i=0;i<batch.length;i++){
     const seg=batch[i];toast('翻译第 '+seg.index+' 段（'+(i+1)+'/'+batch.length+'）…',9000);
+    if(el.translationStatus)el.translationStatus.textContent='正在机翻第 '+seg.index+' 段（'+(i+1)+'/'+batch.length+'）…';
     try{
       if(provider==='youdao'&&proxyReady&&(activeProxyBase!==LOCAL_PROXY_BASE||(appKey&&appSecret))){
         const zh=await youdaoTranslate(seg.source,appKey,appSecret);
@@ -706,12 +744,19 @@ async function doTranslate(count,scope='next'){
       }
       const ri=state.project.segments.findIndex(s=>s.id===seg.id);
       if(ri>=0)state.project.segments[ri]=seg;
+      done++;
     }catch(e){toast('翻译出错：'+e.message);break;}
   }
   const last=batch[batch.length-1];
   const next=state.project.segments.slice(state.project.segments.findIndex(s=>s.id===last.id)+1).find(isTodo);
   if(next)state.currentId=next.id;
-  saveProjectState();render();toast('已处理 '+batch.length+' 段 ✓');
+  saveProjectState();render();toast(done?'已填入 '+done+' 段机翻 ✓':'这次没有填入译文');
+  if(el.translationStatus){
+    el.translationStatus.textContent=done
+      ?'本轮已填入 '+done+' 段机翻。去左侧点已译段，就能看到直译 / 润色内容。'
+      :'这次没有成功填入译文，请看上方提示。';
+  }
+  if(done)cheerMuse(done);
 }
 
 // ── Export ────────────────────────────────────────────────────
@@ -824,6 +869,7 @@ initTheme();
 setupScrollSync();
 $('syncToggle').classList.toggle('active',state.syncScroll);
 checkProxy();
+cheerMuse(0);
 setInterval(checkProxy,5000);
 const ps=getProjects();if(ps.length)loadProject(ps[0].id);else render();
 </script>
