@@ -870,14 +870,14 @@ async function doTranslate(count,scope='next'){
 const escHtml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function exportHtmlFile(){
   if(!state.project){toast('无项目');return;}saveCurrentSeg(true);
-  const rows=state.project.segments.map(s=>'<div class="seg"><div class="src">'+escHtml(s.source)+'</div><div class="fin">'+escHtml(s.draft||s.apiTranslation||'—')+'</div></div>').join('');
+  const rows=state.project.segments.map(s=>'<div class="seg"><div class="src">'+escHtml(s.source)+'</div><div class="fin">'+escHtml(s.draft||'—')+'</div></div>').join('');
   const html='<!doctype html><html><head><meta charset="utf-8"/><title>'+escHtml(state.project.title)+'</title><style>body{font:16px/1.9 "Noto Serif SC",serif;max-width:940px;margin:40px auto;padding:0 20px;background:#fdf9e4;}h1{color:#3a9468;}.seg{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:16px 0;border-bottom:1px solid #e6d9a8;}.src{color:#7a6e50;}.fin{font-weight:600;}</style></head><body><h1>'+escHtml(state.project.title)+'</h1>'+rows+'</body></html>';
   const blob=new Blob([html],{type:'text/html'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.project.title+'_对照.html';a.click();toast('HTML 已导出 ✓');
 }
 function exportTxt(){
   if(!state.project){toast('无项目');return;}saveCurrentSeg(true);
-  const txt=state.project.segments.filter(s=>s.draft||s.apiTranslation).map(s=>s.draft||s.apiTranslation).join('\n\n');
+  const txt=state.project.segments.filter(s=>s.draft).map(s=>s.draft).join('\n\n');
   const blob=new Blob([txt],{type:'text/plain'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.project.title+'_译稿.txt';a.click();toast('TXT 已导出 ✓');
 }
