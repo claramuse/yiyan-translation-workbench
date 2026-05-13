@@ -82,6 +82,8 @@ h2{font-size:16px;font-weight:600;}
 .muse-cheer p{margin:2px 0 0;color:var(--ink);font-size:12.5px;line-height:1.55;}
 .rail-section{margin-bottom:13px;flex-shrink:0;}
 .rail-section.grow{flex:1;min-height:0;display:flex;flex-direction:column;}
+.project-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
+.project-actions button{padding:5px 6px;font-size:11.5px;}
 .progress-bar-wrap{height:4px;background:var(--line);border-radius:2px;margin-bottom:9px;overflow:hidden;flex-shrink:0;}
 .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green-mid));border-radius:2px;transition:width 380ms cubic-bezier(.25,1,.5,1);}
 .progress-stats{font-size:11px;color:var(--muted);margin-bottom:7px;display:flex;justify-content:space-between;flex-shrink:0;}
@@ -218,6 +220,11 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     <div class="rail-section">
       <div class="section-label">项目</div>
       <select id="projectSelect"></select>
+      <div class="project-actions">
+        <button id="exportBackup" class="ghost">备份全部</button>
+        <button id="importBackup" class="ghost">导入备份</button>
+      </div>
+      <input id="backupFileInput" type="file" accept="application/json,.json" hidden/>
       <div style="display:flex;gap:4px;margin-top:5px;">
         <button id="deleteProject" class="ghost danger" style="flex:1;font-size:11.5px;">删除项目</button>
       </div>
@@ -417,13 +424,49 @@ function normalizeProject(p){
 function getProject(id){const s=loadStore();return s['p_'+id]?normalizeProject(JSON.parse(JSON.stringify(s['p_'+id]))):null;}
 function saveProject(p){
   p=normalizeProject(p);
+  p.updated=Date.now();
   const s=loadStore();s['p_'+p.id]=p;
-  const meta={id:p.id,title:p.title,mode:p.mode,segment_count:p.segments.length,created:p.created};
+  const meta={id:p.id,title:p.title,mode:p.mode,segment_count:p.segments.length,created:p.created,updated:p.updated};
   const idx=(s.projects||[]).findIndex(x=>x.id===p.id);
   if(idx>=0)s.projects[idx]=meta;else{s.projects=s.projects||[];s.projects.unshift(meta);}
   saveStore(s);
 }
 function deleteProjectStore(id){const s=loadStore();s.projects=(s.projects||[]).filter(p=>p.id!==id);delete s['p_'+id];saveStore(s);}
+function safeFileName(name){
+  return(name||'yiyan').replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_').slice(0,70)||'yiyan';
+}
+function downloadJson(data,fileName){
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileName;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1200);
+}
+function extractBackupStore(payload){
+  if(payload?.app==='yiyan-workbench'&&payload.store)return payload.store;
+  if(Array.isArray(payload?.projects))return payload;
+  return null;
+}
+function mergeBackupStore(incoming){
+  const current=loadStore();
+  const merged={...current,projects:Array.isArray(current.projects)?current.projects.slice():[]};
+  const incomingProjects=Array.isArray(incoming.projects)?incoming.projects:[];
+  let count=0,firstId='';
+  incomingProjects.forEach(meta=>{
+    const id=meta?.id;if(!id||!incoming['p_'+id])return;
+    const project=normalizeProject(incoming['p_'+id]);
+    merged['p_'+id]=project;
+    const nextMeta={
+      id,title:project.title||meta.title||'未命名',mode:project.mode||meta.mode||'paragraph',
+      segment_count:(project.segments||[]).length,created:project.created||meta.created||Date.now(),
+      updated:project.updated||meta.updated||project.created||Date.now()
+    };
+    const idx=merged.projects.findIndex(p=>p.id===id);
+    if(idx>=0)merged.projects[idx]=nextMeta;else merged.projects.unshift(nextMeta);
+    if(!firstId)firstId=id;count++;
+  });
+  merged.projects.sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0));
+  saveStore(merged);
+  return{count,firstId};
+}
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 // ── Gutenberg HTML parser ─────────────────────────────────────
@@ -838,6 +881,36 @@ function exportTxt(){
   const blob=new Blob([txt],{type:'text/plain'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.project.title+'_译稿.txt';a.click();toast('TXT 已导出 ✓');
 }
+function exportBackupFile(){
+  saveCurrentSeg(true);
+  const store=loadStore();
+  const count=(store.projects||[]).length;
+  if(!count){toast('暂无项目可备份');return;}
+  const day=new Date().toISOString().slice(0,10);
+  downloadJson({app:'yiyan-workbench',version:3,exportedAt:new Date().toISOString(),store},safeFileName('译言工作台备份_'+day)+'.json');
+  toast('已备份 '+count+' 个项目 ✓');
+}
+async function importBackupFile(){
+  const input=$('backupFileInput');
+  const file=input.files?.[0];
+  if(!file)return;
+  try{
+    const payload=JSON.parse(await file.text());
+    const incoming=extractBackupStore(payload);
+    if(!incoming)throw new Error('这不是译言工作台备份文件');
+    const count=(incoming.projects||[]).length;
+    if(!count)throw new Error('备份里没有项目');
+    if(!confirm('导入备份会合并项目；同一个项目会用备份覆盖本机版本。继续吗？'))return;
+    const result=mergeBackupStore(incoming);
+    state.project=null;state.currentId=null;
+    if(result.firstId)loadProject(result.firstId);else render();
+    toast('已导入 '+result.count+' 个项目 ✓');
+  }catch(e){
+    toast('导入失败：'+e.message);
+  }finally{
+    input.value='';
+  }
+}
 
 // ── Theme ─────────────────────────────────────────────────────
 function initTheme(){if(localStorage.getItem('yiyan_theme')==='dark'){document.body.classList.add('dark');$('themeBtn').textContent='☀️';}}
@@ -849,6 +922,9 @@ $('saveCurrent').onclick=()=>saveCurrentSeg(false);
 $('themeBtn').onclick=toggleTheme;
 $('exportHtml').onclick=exportHtmlFile;
 $('exportTxt').onclick=exportTxt;
+$('exportBackup').onclick=exportBackupFile;
+$('importBackup').onclick=()=>$('backupFileInput').click();
+$('backupFileInput').onchange=()=>importBackupFile();
 $('deleteProject').onclick=()=>{
   if(!state.project||!confirm('确定删除「'+state.project.title+'」？'))return;
   deleteProjectStore(state.project.id);state.project=null;state.currentId=null;
