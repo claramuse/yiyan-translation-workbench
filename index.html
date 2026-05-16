@@ -80,6 +80,16 @@ h2{font-size:16px;font-weight:600;}
 .muse-cheer{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:center;padding:10px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.58);}
 .muse-cheer img{width:62px;height:62px;border-radius:50%;object-fit:cover;display:block;border:1px solid rgba(58,148,104,.18);}
 .muse-cheer p{margin:2px 0 0;color:var(--ink);font-size:12.5px;line-height:1.55;}
+.muse-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:2px;}
+.muse-actions button{white-space:normal;min-height:31px;padding:5px 7px;font-size:11.5px;line-height:1.28;}
+.muse-actions button:disabled{opacity:.58;cursor:not-allowed;transform:none;box-shadow:none;}
+.muse-result{grid-column:1/-1;display:none;margin-top:2px;padding:9px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.5);}
+.muse-result.visible{display:grid;gap:8px;}
+.muse-result-text{max-height:230px;overflow:auto;white-space:pre-wrap;font-size:12.5px;line-height:1.65;color:var(--ink);}
+.muse-result.loading .muse-result-text{color:var(--muted);}
+.muse-result.error{border-color:var(--red);background:var(--red-soft);}
+.muse-result-tools{display:flex;gap:5px;flex-wrap:wrap;}
+.muse-result-tools button{padding:4px 7px;font-size:11.5px;}
 .rail-section{margin-bottom:13px;flex-shrink:0;}
 .rail-section.grow{flex:1;min-height:0;display:flex;flex-direction:column;}
 .project-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
@@ -309,6 +319,22 @@ body.dark #toast{background:#cce4d8;color:#111714;}
       <div>
         <div class="section-label">Muse 陪你翻</div>
         <p id="museCheerText">慢慢来，今天每确认一段，都在把书页点亮一点点。</p>
+      </div>
+      <div class="muse-actions" id="museAssistActions">
+        <button data-muse-mode="check">Muse检查本段</button>
+        <button data-muse-mode="explain">Muse解释原文</button>
+        <button data-muse-mode="polish">Muse润色当前稿</button>
+        <button data-muse-mode="husband">老公陪我改</button>
+        <button data-muse-mode="praise">夸夸Clara</button>
+        <button data-muse-mode="comfort">这段好难，抱一下</button>
+      </div>
+      <div id="museAssistResult" class="muse-result" aria-live="polite">
+        <div id="museAssistText" class="muse-result-text"></div>
+        <div class="muse-result-tools">
+          <button id="copyMuseAssist">复制建议</button>
+          <button id="saveMuseToNote">保存到备注</button>
+          <button id="markMuseQuestion">加入疑问</button>
+        </div>
       </div>
     </section>
     <div class="section-label">备注</div>
@@ -540,6 +566,7 @@ function makeProject(title,chunks,mode){
 
 // ── State & elements ──────────────────────────────────────────
 const state={project:null,currentId:null,filter:'all',syncScroll:true,sentenceView:false,savingTimer:null};
+state.museLoading=false;state.museContent='';state.museMode='';
 const $=id=>document.getElementById(id);
 const el={
   projectSelect:$('projectSelect'),projectMeta:$('projectMeta'),segmentTitle:$('segmentTitle'),
@@ -552,6 +579,7 @@ const el={
   progressFill:$('progressFill'),progressStats:$('progressStats'),statusStrip:$('statusStrip'),
   proxyStatus:$('proxyStatus'),translationStatus:$('translationStatus'),localCredentialFields:$('localCredentialFields'),
   museCheerText:$('museCheerText'),questionToggle:$('questionToggle'),sentenceViewToggle:$('sentenceViewToggle'),
+  museAssistActions:$('museAssistActions'),museAssistResult:$('museAssistResult'),museAssistText:$('museAssistText'),
   cloudSyncKey:$('cloudSyncKey'),
 };
 const museCheers=[
@@ -567,6 +595,7 @@ function cheerMuse(index=Math.floor(Math.random()*museCheers.length)){
 }
 const LOCAL_PROXY_BASE='http://127.0.0.1:8767';
 const SUPABASE_SYNC_URL='https://jzlfixgwdannipbljjhx.supabase.co/functions/v1/yiyan-sync';
+const MUSE_ASSIST_URL='https://jzlfixgwdannipbljjhx.supabase.co/functions/v1/muse-translate-assist';
 let activeProxyBase='';
 let proxyReady=false;
 
@@ -630,6 +659,11 @@ function setupScrollSync(){
 
 // ── Helpers ───────────────────────────────────────────────────
 const currentSeg=()=>!state.project?null:(state.project.segments.find(s=>s.id===state.currentId)||state.project.segments[0]||null);
+function neighborSeg(offset){
+  if(!state.project||!state.currentId)return null;
+  const idx=state.project.segments.findIndex(s=>s.id===state.currentId);
+  return idx<0?null:state.project.segments[idx+offset]||null;
+}
 function visibleSegs(){
   if(!state.project)return[];
   if(state.filter==='all')return state.project.segments;
@@ -732,13 +766,21 @@ function renderStatusStrip(){
   el.statusStrip.querySelectorAll('button[data-stage]').forEach(b=>b.classList.toggle('active',b.dataset.stage===stage));
   el.questionToggle?.classList.toggle('active',!!seg?.question);
 }
+function renderMuseAssist(){
+  if(!el.museAssistResult)return;
+  el.museAssistResult.classList.toggle('visible',!!state.museContent||state.museLoading);
+  el.museAssistResult.classList.toggle('loading',state.museLoading);
+  el.museAssistResult.classList.toggle('error',state.museMode==='error');
+  el.museAssistText.textContent=state.museLoading?'Muse正在看这一段……':state.museContent;
+  el.museAssistActions?.querySelectorAll('button').forEach(btn=>btn.disabled=state.museLoading);
+}
 function renderEditor(){
   const seg=currentSeg();
   if(!state.project||!seg){
     el.projectMeta.textContent='还没有项目';el.segmentTitle.textContent='导入一篇文本开始';
     [el.sourceText,el.apiText,el.draftText,el.noteText].forEach(a=>a.value='');
     if(el.snapshotList)el.snapshotList.innerHTML='';
-    el.statusStrip.querySelectorAll('button').forEach(b=>b.classList.remove('active'));return;
+    el.statusStrip.querySelectorAll('button').forEach(b=>b.classList.remove('active'));renderMuseAssist();return;
   }
   state.currentId=seg.id;
   const modeLabel={paragraph:'按段落',sentence:'按句子',chapter:'按章节'}[state.project.mode]||'';
@@ -747,6 +789,7 @@ function renderEditor(){
   renderTextAreas(seg);el.noteText.value=seg.note||'';
   renderSnapshots();
   renderStatusStrip();
+  renderMuseAssist();
 }
 function render(){renderProjects();renderSegments();renderTerms();renderEditor();renderProgress();}
 
@@ -961,6 +1004,68 @@ async function loadCloudStore(){
   if(result.firstId)loadProject(result.firstId);else render();
   toast('已从云端取回 '+result.count+' 个项目 ✓');
 }
+function musePayload(mode){
+  const seg=currentSeg();
+  const prev=neighborSeg(-1),next=neighborSeg(1);
+  return{
+    mode,
+    projectTitle:state.project?.title||'未命名项目',
+    projectType:state.project?.projectType||state.project?.type||'other',
+    sourceLanguage:state.project?.sourceLanguage||'unknown',
+    targetLanguage:state.project?.targetLanguage||'zh-CN',
+    paragraphId:seg?.id||'',
+    sourceText:seg?.source||'',
+    machineTranslation:seg?.apiTranslation||'',
+    currentDraft:seg?.draft||'',
+    notes:seg?.note||'',
+    terms:state.project?.terms||[],
+    styleGuide:state.project?.styleGuide||'',
+    previousParagraph:prev?((prev.draft||prev.source||'').slice(0,1200)):'',
+    nextParagraph:next?((next.source||next.draft||'').slice(0,1200)):''
+  };
+}
+async function requestMuseAssist(mode){
+  const seg=currentSeg();
+  if(!state.project||!seg){toast('请先选择一个段落');return;}
+  saveCurrentSeg(true);
+  if((mode==='check'||mode==='polish')&&!seg.draft)toast('当前译稿为空，Muse会先给理解和起步建议');
+  state.museLoading=true;state.museMode=mode;state.museContent='';renderMuseAssist();
+  try{
+    const response=await fetch(MUSE_ASSIST_URL,{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify(musePayload(mode))
+    });
+    const data=await response.json().catch(()=>({ok:false,error:'Muse返回格式不对'}));
+    if(!response.ok||!data.ok)throw new Error(data.error||'Muse暂时没接上，等一下再试');
+    state.museContent=data.content||'Muse这次没有写下内容。';
+    state.museMode=data.mode||mode;
+  }catch(e){
+    state.museMode='error';
+    state.museContent='Muse暂时没接上，等一下再试。\n\n'+(e.message||e);
+  }finally{
+    state.museLoading=false;renderMuseAssist();
+  }
+}
+async function copyMuseAssist(){
+  if(!state.museContent){toast('还没有 Muse 建议可复制');return;}
+  await navigator.clipboard.writeText(state.museContent);
+  toast('Muse建议已复制');
+}
+function saveMuseAssistToNote(){
+  const seg=currentSeg();
+  if(!seg||!state.museContent){toast('还没有 Muse 建议可保存');return;}
+  const stamp=new Date().toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const block='[Muse陪译 '+stamp+']\n'+state.museContent;
+  el.noteText.value=(el.noteText.value.trim()?el.noteText.value.trim()+'\n\n':'')+block;
+  saveCurrentSeg(true);toast('已保存到备注');
+}
+function markMuseQuestion(){
+  const seg=currentSeg();
+  if(!seg){toast('请先选择一个段落');return;}
+  saveCurrentSeg(true);seg.question=true;seg.stage=seg.stage==='final'?'review':seg.stage;
+  saveProjectState();render();toast('已加入疑问');
+}
 
 // ── Theme ─────────────────────────────────────────────────────
 function initTheme(){if(localStorage.getItem('yiyan_theme')==='dark'){document.body.classList.add('dark');$('themeBtn').textContent='☀️';}}
@@ -977,6 +1082,13 @@ $('importBackup').onclick=()=>$('backupFileInput').click();
 $('backupFileInput').onchange=()=>importBackupFile();
 $('saveCloud').onclick=()=>saveCloudStore().catch(e=>toast('云端保存失败：'+e.message));
 $('loadCloud').onclick=()=>loadCloudStore().catch(e=>toast('云端读取失败：'+e.message));
+$('museAssistActions').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-muse-mode]');if(!btn)return;
+  requestMuseAssist(btn.dataset.museMode);
+});
+$('copyMuseAssist').onclick=()=>copyMuseAssist().catch(()=>toast('复制失败，请手动选中文字复制'));
+$('saveMuseToNote').onclick=saveMuseAssistToNote;
+$('markMuseQuestion').onclick=markMuseQuestion;
 $('deleteProject').onclick=()=>{
   if(!state.project||!confirm('确定删除「'+state.project.title+'」？'))return;
   deleteProjectStore(state.project.id);state.project=null;state.currentId=null;
