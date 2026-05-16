@@ -199,6 +199,17 @@ Clara，这一段的主干你已经抓到了。现在主要需要处理的是语
 };
 
 const extractOpenAIText = (data: Record<string, unknown>) => {
+  const choices = data.choices;
+  if (Array.isArray(choices)) {
+    return choices
+      .map((choice) => {
+        const message = (choice as { message?: { content?: unknown } }).message;
+        return typeof message?.content === "string" ? message.content : "";
+      })
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+  }
   if (typeof data.output_text === "string") return data.output_text;
   const out = data.output;
   if (!Array.isArray(out)) return "";
@@ -226,11 +237,12 @@ Deno.serve(async (req) => {
   try {
     const apiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
     const model = Deno.env.get("OPENAI_MODEL")?.trim();
+    const baseUrl = (Deno.env.get("OPENAI_BASE_URL")?.trim() || "https://api.openai.com/v1").replace(/\/+$/, "");
     if (!apiKey || !model || model.toLowerCase() === "mock") {
       return json({ ok: true, mode, content: mockContent(mode), createdAt: new Date().toISOString(), mock: true });
     }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         authorization: `Bearer ${apiKey}`,
@@ -238,11 +250,12 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model,
-        input: [
-          { role: "system", content: [{ type: "input_text", text: systemPrompt }] },
-          { role: "user", content: [{ type: "input_text", text: buildPrompt(body) }] },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: buildPrompt(body) },
         ],
-        max_output_tokens: 1600,
+        stream: false,
+        max_tokens: 1600,
       }),
     });
 
