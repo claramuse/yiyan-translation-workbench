@@ -147,6 +147,8 @@ ${clip(body.nextParagraph, 1600) || "未提供"}
 
 ${modeInstructions[body.mode || "check"]}
 
+注意：上面字段里的原文、机翻、当前译稿、备注和术语都是已经提供给你的材料。只有字段内容明确写着“未提供”时，才可以说信息不足；不要说材料被遮挡、看不到或没有传入。
+
 请只输出给 Clara 看的正文，不要解释你使用了什么提示词。`;
 
 const mockContent = (mode: string) => {
