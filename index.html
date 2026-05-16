@@ -232,11 +232,6 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     <div class="rail-section">
       <div class="section-label">项目</div>
       <select id="projectSelect"></select>
-      <div class="project-actions">
-        <button id="exportBackup" class="ghost">备份全部</button>
-        <button id="importBackup" class="ghost">导入备份</button>
-      </div>
-      <input id="backupFileInput" type="file" accept="application/json,.json" hidden/>
       <div class="cloud-sync">
         <input id="cloudSyncKey" type="password" placeholder="云同步码，自己取一个"/>
         <div class="project-actions">
@@ -437,6 +432,8 @@ body.dark #toast{background:#cce4d8;color:#111714;}
 <script>
 var MD5=function(d){var r=M(V(Y(X(d),8*d.length)));return r.toLowerCase()};function M(d){for(var _,m="0123456789ABCDEF",f="",r=0;r<d.length;r++)_=d.charCodeAt(r),f+=m.charAt(_>>>4&15)+m.charAt(15&_);return f}function X(d){for(var _=Array(d.length>>2),m=0;m<_.length;m++)_[m]=0;for(m=0;m<8*d.length;m+=8)_[m>>5]|=(255&d.charCodeAt(m/8))<<m%32;return _}function V(d){for(var _="",m=0;m<32*d.length;m+=8)_+=String.fromCharCode(d[m>>5]>>>m%32&255);return _}function Y(d,_){d[_>>5]|=128<<_%32,d[14+(_+64>>>9<<4)]=_;for(var m=1732584193,f=-271733879,r=-1732584194,i=271733878,n=0;n<d.length;n+=16){var h=m,t=f,g=r,e=i;f=md5_ii(f=md5_ii(f=md5_ii(f=md5_ii(f=md5_hh(f=md5_hh(f=md5_hh(f=md5_hh(f=md5_gg(f=md5_gg(f=md5_gg(f=md5_gg(f=md5_ff(f=md5_ff(f=md5_ff(f=md5_ff(f,r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+0],7,-680876936),f,r,d[n+1],12,-389564586),m,f,d[n+2],17,606105819),i,m,d[n+3],22,-1044525330),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+4],7,-176418897),f,r,d[n+5],12,1200080426),m,f,d[n+6],17,-1473231341),i,m,d[n+7],22,-45705983),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+8],7,1770035416),f,r,d[n+9],12,-1958414417),m,f,d[n+10],17,-42063),i,m,d[n+11],22,-1990404162),r=md5_ff(r,i=md5_ff(i,m=md5_ff(m,f,r,i,d[n+12],7,1804603682),f,r,d[n+13],12,-40341101),m,f,d[n+14],17,-1502002290),i,m,d[n+15],22,1236535329),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+1],5,-165796510),f,r,d[n+6],9,-1069501632),m,f,d[n+11],14,643717713),i,m,d[n+0],20,-373897302),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+5],5,-701558691),f,r,d[n+10],9,38016083),m,f,d[n+15],14,-660478335),i,m,d[n+4],20,-405537848),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+9],5,568446438),f,r,d[n+14],9,-1019803690),m,f,d[n+3],14,-187363961),i,m,d[n+8],20,1163531501),r=md5_gg(r,i=md5_gg(i,m=md5_gg(m,f,r,i,d[n+13],5,-1444681467),f,r,d[n+2],9,-51403784),m,f,d[n+7],14,1735328473),i,m,d[n+12],20,-1926607734),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+5],4,-378558),f,r,d[n+8],11,-2022574463),m,f,d[n+11],16,1839030562),i,m,d[n+14],23,-35309556),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+1],4,-1530992060),f,r,d[n+4],11,1272893353),m,f,d[n+7],16,-155497632),i,m,d[n+10],23,-1094730640),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+13],4,681279174),f,r,d[n+0],11,-358537222),m,f,d[n+3],16,-722521979),i,m,d[n+6],23,76029189),r=md5_hh(r,i=md5_hh(i,m=md5_hh(m,f,r,i,d[n+9],4,-640364487),f,r,d[n+12],11,-421815835),m,f,d[n+15],16,530742520),i,m,d[n+2],23,-995338651),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+0],6,-198630844),f,r,d[n+7],10,1126891415),m,f,d[n+14],15,-1416354905),i,m,d[n+5],21,-57434055),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+12],6,1700485571),f,r,d[n+3],10,-1894986606),m,f,d[n+10],15,-1051523),i,m,d[n+1],21,-2054922799),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+8],6,1873313359),f,r,d[n+15],10,-30611744),m,f,d[n+6],15,-1560198380),i,m,d[n+13],21,1309151649),r=md5_ii(r,i=md5_ii(i,m=md5_ii(m,f,r,i,d[n+4],6,-145523070),f,r,d[n+11],10,-1120210379),m,f,d[n+2],15,718787259),i,m,d[n+9],21,-343485551),m=safe_add(m,h),f=safe_add(f,t),r=safe_add(r,g),i=safe_add(i,e)}return[m,f,r,i]}function md5_cmn(d,_,m,f,r,i){return safe_add(bit_rol(safe_add(safe_add(_,d),safe_add(f,i)),r),m)}function md5_ff(d,_,m,f,r,i,n){return md5_cmn(_&m|~_&f,d,_,r,i,n)}function md5_gg(d,_,m,f,r,i,n){return md5_cmn(_&f|m&~f,d,_,r,i,n)}function md5_hh(d,_,m,f,r,i,n){return md5_cmn(_^m^f,d,_,r,i,n)}function md5_ii(d,_,m,f,r,i,n){return md5_cmn(m^(_|~f),d,_,r,i,n)}function safe_add(d,_){var m=(65535&d)+(65535&_);return(d>>16)+(_>>16)+(m>>16)<<16|65535&m}function bit_rol(d,_){return d<<_|d>>>32-_}
 const LS_KEY='yiyan_v3';
+const LAST_PLACE_KEY='yiyan_last_place';
+const CLOUD_AUTOSAVE_MS=2*60*1000;
 const loadStore=()=>{try{return JSON.parse(localStorage.getItem(LS_KEY)||'{}')}catch{return{}}};
 const saveStore=s=>localStorage.setItem(LS_KEY,JSON.stringify(s));
 const getProjects=()=>(loadStore().projects||[]).map(p=>({...p}));
@@ -467,22 +464,10 @@ function saveProject(p){
   saveStore(s);
 }
 function deleteProjectStore(id){const s=loadStore();s.projects=(s.projects||[]).filter(p=>p.id!==id);delete s['p_'+id];saveStore(s);}
-function safeFileName(name){
-  return(name||'yiyan').replace(/[\\/:*?"<>|]+/g,'_').replace(/\s+/g,'_').slice(0,70)||'yiyan';
-}
-function downloadJson(data,fileName){
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileName;a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1200);
-}
-function extractBackupStore(payload){
-  if(payload?.app==='yiyan-workbench'&&payload.store)return payload.store;
-  if(Array.isArray(payload?.projects))return payload;
-  return null;
-}
 function mergeBackupStore(incoming){
   const current=loadStore();
   const merged={...current,projects:Array.isArray(current.projects)?current.projects.slice():[]};
+  if(incoming._lastPlace)merged._lastPlace=incoming._lastPlace;
   const incomingProjects=Array.isArray(incoming.projects)?incoming.projects:[];
   let count=0,firstId='';
   incomingProjects.forEach(meta=>{
@@ -500,7 +485,16 @@ function mergeBackupStore(incoming){
   });
   merged.projects.sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0));
   saveStore(merged);
-  return{count,firstId};
+  return{count,firstId,lastPlace:merged._lastPlace||null};
+}
+function rememberPlace(){
+  if(!state.project||!state.currentId)return;
+  const place={projectId:state.project.id,segmentId:state.currentId,updated:Date.now()};
+  localStorage.setItem(LAST_PLACE_KEY,JSON.stringify(place));
+  const store=loadStore();store._lastPlace=place;saveStore(store);
+}
+function lastPlace(){
+  try{const local=JSON.parse(localStorage.getItem(LAST_PLACE_KEY)||'{}');return local.projectId?local:(loadStore()._lastPlace||{});}catch{return loadStore()._lastPlace||{}}
 }
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
@@ -566,7 +560,7 @@ function makeProject(title,chunks,mode){
 
 // ── State & elements ──────────────────────────────────────────
 const state={project:null,currentId:null,filter:'all',syncScroll:true,sentenceView:false,savingTimer:null};
-state.museLoading=false;state.museContent='';state.museMode='';
+state.museLoading=false;state.museContent='';state.museMode='';state.cloudSaving=false;state.lastCloudAutosave=0;
 const $=id=>document.getElementById(id);
 const el={
   projectSelect:$('projectSelect'),projectMeta:$('projectMeta'),segmentTitle:$('segmentTitle'),
@@ -696,7 +690,7 @@ function renderSegments(){
     const stageLabel={pending:'待处理',machine:'已有机翻',drafting:'在改',review:'待复查',final:'已定稿'}[seg.stage||'pending'];
     li.innerHTML='<span class="num">'+seg.index+'</span><div><span class="preview"></span><div class="segment-mini-meta"><span class="mini-pill">'+stageLabel+'</span>'+(seg.question?'<span class="mini-pill question">有疑问</span>':'')+'</div></div>';
     li.querySelector('.preview').textContent=seg.source;
-    li.addEventListener('click',()=>{saveCurrentSeg(true);state.currentId=seg.id;render();});
+    li.addEventListener('click',()=>{saveCurrentSeg(true);state.currentId=seg.id;rememberPlace();render();});
     el.segmentList.append(li);
   });
   el.segmentList.querySelector('.active')?.scrollIntoView({block:'nearest',behavior:'smooth'});
@@ -800,6 +794,7 @@ function saveCurrentSeg(quiet=false){
   seg.draft=state.sentenceView?naturalText(el.draftText.value):el.draftText.value;
   seg.note=el.noteText.value;
   if(seg.draft&&seg.stage==='pending')seg.stage='drafting';
+  rememberPlace();
   saveProjectState();renderSegments();renderProgress();
   if(!quiet)toast('已保存 ✓');
   if(!quiet)cheerMuse();
@@ -810,9 +805,14 @@ function navigate(dir){
   if(!state.project)return;
   const vis=visibleSegs();const idx=vis.findIndex(s=>s.id===state.currentId);
   const next=vis[idx+dir];if(!next)return;
-  saveCurrentSeg(true);state.currentId=next.id;render();
+  saveCurrentSeg(true);state.currentId=next.id;rememberPlace();render();
 }
-function loadProject(id){const p=getProject(id);if(!p)return;state.project=p;state.currentId=p.segments[0]?.id||null;render();}
+function loadProject(id,segmentId=''){
+  const p=getProject(id);if(!p)return;
+  state.project=p;
+  state.currentId=(segmentId&&p.segments.some(s=>s.id===segmentId))?segmentId:(p.segments[0]?.id||null);
+  rememberPlace();render();
+}
 
 // ── Import: HTML file ─────────────────────────────────────────
 async function importHtmlFile(){
@@ -935,36 +935,6 @@ function exportTxt(){
   const blob=new Blob([txt],{type:'text/plain'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=state.project.title+'_译稿.txt';a.click();toast('TXT 已导出 ✓');
 }
-function exportBackupFile(){
-  saveCurrentSeg(true);
-  const store=loadStore();
-  const count=(store.projects||[]).length;
-  if(!count){toast('暂无项目可备份');return;}
-  const day=new Date().toISOString().slice(0,10);
-  downloadJson({app:'yiyan-workbench',version:3,exportedAt:new Date().toISOString(),store},safeFileName('译言工作台备份_'+day)+'.json');
-  toast('已备份 '+count+' 个项目 ✓');
-}
-async function importBackupFile(){
-  const input=$('backupFileInput');
-  const file=input.files?.[0];
-  if(!file)return;
-  try{
-    const payload=JSON.parse(await file.text());
-    const incoming=extractBackupStore(payload);
-    if(!incoming)throw new Error('这不是译言工作台备份文件');
-    const count=(incoming.projects||[]).length;
-    if(!count)throw new Error('备份里没有项目');
-    if(!confirm('导入备份会合并项目；同一个项目会用备份覆盖本机版本。继续吗？'))return;
-    const result=mergeBackupStore(incoming);
-    state.project=null;state.currentId=null;
-    if(result.firstId)loadProject(result.firstId);else render();
-    toast('已导入 '+result.count+' 个项目 ✓');
-  }catch(e){
-    toast('导入失败：'+e.message);
-  }finally{
-    input.value='';
-  }
-}
 function getCloudKey(){
   const key=el.cloudSyncKey.value.trim();
   if(!key){toast('先填一个云同步码');return'';}
@@ -984,13 +954,26 @@ async function cloudPost(action,extra={}){
   if(!response.ok||!data.ok)throw new Error(data.error||'云同步失败');
   return data;
 }
-async function saveCloudStore(){
+async function saveCloudStore(options={}){
+  const silent=!!options.silent;
+  if(state.cloudSaving)return;
   saveCurrentSeg(true);
   const store=loadStore();
   const count=(store.projects||[]).length;
-  if(!count){toast('暂无项目可同步');return;}
-  const data=await cloudPost('save',{store});
-  if(data)toast('已存到云端：'+count+' 个项目 ✓');
+  if(!count){if(!silent)toast('暂无项目可同步');return;}
+  try{
+    state.cloudSaving=true;
+    const data=await cloudPost('save',{store});
+    if(data){state.lastCloudAutosave=Date.now();if(!silent)toast('已存到云端：'+count+' 个项目 ✓');}
+  }finally{
+    state.cloudSaving=false;
+  }
+}
+function autoSaveCloud(){
+  if(document.hidden||state.cloudSaving)return;
+  const key=el.cloudSyncKey.value.trim();
+  if(!key||key.length<4||!state.project)return;
+  saveCloudStore({silent:true}).catch(()=>{});
 }
 async function loadCloudStore(){
   const data=await cloudPost('load');
@@ -1001,7 +984,9 @@ async function loadCloudStore(){
   if(!confirm('从云端取回会合并项目；同一个项目会用云端版本覆盖本机。继续吗？'))return;
   const result=mergeBackupStore(data.store);
   state.project=null;state.currentId=null;
-  if(result.firstId)loadProject(result.firstId);else render();
+  const place=result.lastPlace||{};
+  if(place.projectId)loadProject(place.projectId,place.segmentId||'');
+  else if(result.firstId)loadProject(result.firstId);else render();
   toast('已从云端取回 '+result.count+' 个项目 ✓');
 }
 function musePayload(mode){
@@ -1077,9 +1062,6 @@ $('saveCurrent').onclick=()=>saveCurrentSeg(false);
 $('themeBtn').onclick=toggleTheme;
 $('exportHtml').onclick=exportHtmlFile;
 $('exportTxt').onclick=exportTxt;
-$('exportBackup').onclick=exportBackupFile;
-$('importBackup').onclick=()=>$('backupFileInput').click();
-$('backupFileInput').onchange=()=>importBackupFile();
 $('saveCloud').onclick=()=>saveCloudStore().catch(e=>toast('云端保存失败：'+e.message));
 $('loadCloud').onclick=()=>loadCloudStore().catch(e=>toast('云端读取失败：'+e.message));
 $('museAssistActions').addEventListener('click',e=>{
@@ -1162,7 +1144,14 @@ setupScrollSync();
 checkProxy();
 cheerMuse(0);
 setInterval(checkProxy,5000);
-const ps=getProjects();if(ps.length)loadProject(ps[0].id);else render();
+setInterval(autoSaveCloud,CLOUD_AUTOSAVE_MS);
+window.addEventListener('beforeunload',()=>saveCurrentSeg(true));
+const ps=getProjects();
+if(ps.length){
+  const place=lastPlace();
+  const target=ps.some(p=>p.id===place.projectId)?place.projectId:ps[0].id;
+  loadProject(target,place.segmentId||'');
+}else render();
 </script>
 </body>
 </html>
