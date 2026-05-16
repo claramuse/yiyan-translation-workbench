@@ -1,0 +1,6 @@
+.git/
+.netlify/
+node_modules/
+*.log
+__pycache__/
+supabase/.temp/

@@ -9,3 +9,6 @@ Thumbs.db
 
 # Local Supabase CLI cache
 supabase/.temp/
+
+# Cloudflare deploy staging folder
+.cf-deploy/
