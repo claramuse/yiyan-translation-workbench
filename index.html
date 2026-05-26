@@ -78,7 +78,16 @@ h2{font-size:16px;font-weight:600;}
 .rail,.inspector{min-height:0;overflow:hidden;padding:13px;border-right:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;}
 .inspector{border-right:0;border-left:1px solid var(--line);overflow-y:auto;}
 .muse-cheer{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:center;padding:10px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.58);}
-.muse-cheer img{width:76px;height:70px;border-radius:10px;object-fit:contain;display:block;border:1px solid rgba(58,148,104,.18);background:rgba(255,251,243,.72);padding:2px;}
+.muse-cheer img{width:76px;height:70px;border-radius:10px;object-fit:contain;display:block;border:1px solid rgba(58,148,104,.18);background:rgba(255,251,243,.72);padding:2px;transition:transform .24s ease,filter .24s ease;}
+.muse-cheer img[data-pose="rest"]{animation:museDoze 4.8s ease-in-out infinite;}
+.muse-cheer img[data-pose="working"]{animation:museWork .9s ease-in-out infinite;filter:drop-shadow(0 5px 9px rgba(58,148,104,.18));}
+.muse-cheer img[data-pose="done"]{animation:museWave 1.45s ease-in-out infinite;filter:drop-shadow(0 5px 9px rgba(58,148,104,.14));}
+.muse-cheer img[data-pose="error"]{animation:museTea 2.4s ease-in-out infinite;}
+@keyframes museDoze{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(2px) rotate(-.4deg);}}
+@keyframes museWork{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-2px) scale(1.018);}}
+@keyframes museWave{0%,100%{transform:translateY(0) rotate(0deg);}35%{transform:translateY(-2px) rotate(-2deg);}70%{transform:translateY(1px) rotate(1.4deg);}}
+@keyframes museTea{0%,100%{transform:translateY(0);}50%{transform:translateY(-1px);}}
+@media (prefers-reduced-motion:reduce){.muse-cheer img{animation:none!important;}}
 .muse-cheer p{margin:2px 0 0;color:var(--ink);font-size:12.5px;line-height:1.55;}
 .muse-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:2px;}
 .muse-actions button{white-space:normal;min-height:31px;padding:5px 7px;font-size:11.5px;line-height:1.28;}
@@ -310,7 +319,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
   </section>
   <aside class="inspector">
     <section class="muse-cheer">
-      <img src="./assets/muse-human-review.png" alt="Muse 小助手"/>
+      <img id="museMascot" src="./assets/muse-human-review.png" alt="Muse 小助手" data-pose="rest"/>
       <div>
         <div class="section-label">Muse 陪你翻</div>
         <p id="museCheerText">慢慢来，今天每确认一段，都在把书页点亮一点点。</p>
@@ -574,6 +583,7 @@ const el={
   proxyStatus:$('proxyStatus'),translationStatus:$('translationStatus'),localCredentialFields:$('localCredentialFields'),
   museCheerText:$('museCheerText'),questionToggle:$('questionToggle'),sentenceViewToggle:$('sentenceViewToggle'),
   museAssistActions:$('museAssistActions'),museAssistResult:$('museAssistResult'),museAssistText:$('museAssistText'),
+  museMascot:$('museMascot'),
   cloudSyncKey:$('cloudSyncKey'),
 };
 const museCheers=[
@@ -590,6 +600,12 @@ function cheerMuse(index=Math.floor(Math.random()*museCheers.length)){
 const LOCAL_PROXY_BASE='http://127.0.0.1:8767';
 const SUPABASE_SYNC_URL='https://jzlfixgwdannipbljjhx.supabase.co/functions/v1/yiyan-sync';
 const MUSE_ASSIST_URL='https://jzlfixgwdannipbljjhx.supabase.co/functions/v1/muse-translate-assist';
+const MUSE_POSES={
+  rest:'./assets/muse-human-review.png',
+  working:'./assets/muse-human-work.png',
+  done:'./assets/muse-human-wave.png',
+  error:'./assets/muse-human-tea.png'
+};
 let activeProxyBase='';
 let proxyReady=false;
 
@@ -762,6 +778,12 @@ function renderStatusStrip(){
 }
 function renderMuseAssist(){
   if(!el.museAssistResult)return;
+  const musePose=state.museLoading?'working':(state.museMode==='error'?'error':(state.museContent?'done':'rest'));
+  if(el.museMascot){
+    const nextSrc=MUSE_POSES[musePose]||MUSE_POSES.rest;
+    if(el.museMascot.getAttribute('src')!==nextSrc)el.museMascot.src=nextSrc;
+    el.museMascot.dataset.pose=musePose;
+  }
   el.museAssistResult.classList.toggle('visible',!!state.museContent||state.museLoading);
   el.museAssistResult.classList.toggle('loading',state.museLoading);
   el.museAssistResult.classList.toggle('error',state.museMode==='error');
