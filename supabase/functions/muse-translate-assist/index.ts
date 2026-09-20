@@ -4,7 +4,7 @@ const corsHeaders = {
   "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const modes = new Set(["check", "explain", "polish", "husband", "praise", "comfort"]);
+const modes = new Set(["check", "explain", "polish", "husband", "praise", "comfort", "selection"]);
 
 type AssistBody = {
   mode?: string;
@@ -21,6 +21,11 @@ type AssistBody = {
   styleGuide?: string;
   previousParagraph?: string;
   nextParagraph?: string;
+  selectionAction?: string;
+  selectedText?: string;
+  selectionField?: string;
+  selectionBefore?: string;
+  selectionAfter?: string;
 };
 
 const json = (payload: unknown, status = 200) =>
@@ -112,6 +117,25 @@ const modeInstructions: Record<string, string> = {
 【Muse抱一下】`,
 };
 
+const selectionInstructions = (action: string) => {
+  if (action === "polish") {
+    return `只润色 Clara 框选的文字，并结合所在段落判断语气。请按以下格式输出：
+【润色判断】
+【建议替换】
+这里必须只写可以直接替换或加入当前稿的最终文本，不加引号，不加解释。
+【为什么这样改】`;
+  }
+  if (action === "explain") {
+    return `只重点解释 Clara 框选的文字，并结合所在段落消除歧义。请按以下格式输出：
+【这处在说什么】
+【语气和细节】
+【翻译提醒】`;
+  }
+  return `直接回答 Clara 对框选文字可能产生的疑问，并结合所在段落给出有用判断。请按以下格式输出：
+【Muse回答】
+【放回全文时要注意】`;
+};
+
 const buildPrompt = (body: AssistBody) => `请根据下面的当前段落材料，给 Clara 一次陪译建议。
 
 模式：${body.mode}
@@ -142,16 +166,42 @@ ${clip(body.currentDraft, 3200) || "未提供"}
 当前备注：
 ${clip(body.notes, 1800) || "未提供"}
 
+Clara框选的位置：${body.selectionField === "draft" ? "当前译稿" : body.selectionField === "source" ? "原文" : "未提供"}
+框选操作：${clip(body.selectionAction, 40) || "未提供"}
+框选前的局部文字：
+${clip(body.selectionBefore, 500) || "未提供"}
+框选文字：
+${clip(body.selectedText, 1800) || "未提供"}
+框选后的局部文字：
+${clip(body.selectionAfter, 500) || "未提供"}
+
 下一段必要上下文：
 ${clip(body.nextParagraph, 1600) || "未提供"}
 
-${modeInstructions[body.mode || "check"]}
+${body.mode === "selection" ? selectionInstructions(clip(body.selectionAction, 40)) : modeInstructions[body.mode || "check"]}
 
 注意：上面字段里的原文、机翻、当前译稿、备注和术语都是已经提供给你的材料。只有字段内容明确写着“未提供”时，才可以说信息不足；不要说材料被遮挡、看不到或没有传入。
 
 请只输出给 Clara 看的正文，不要解释你使用了什么提示词。`;
 
-const mockContent = (mode: string) => {
+const mockContent = (mode: string, body: AssistBody = {}) => {
+  if (mode === "selection") {
+    if (body.selectionAction === "polish") {
+      return `【润色判断】
+这处意思已经清楚，可以把中文节奏再放松一点。
+
+【建议替换】
+${clip(body.selectedText, 1800) || "这是一条可直接采用的 mock 润色文字。"}
+
+【为什么这样改】
+保留原意和 Clara 的声音，只处理局部表达。`;
+    }
+    return `【Muse回答】
+我会只看你刚刚框选的这处，并结合当前段落解释它在这里的意思。
+
+【放回全文时要注意】
+留意它与前后句的语气和指代关系。`;
+  }
   if (mode === "polish") {
     return `【润色方向】
 Clara，这一段可以先保留你的基本意思，再把句子的呼吸放松一点。不要急着变华丽，先让中文自然站稳。
@@ -227,6 +277,11 @@ const extractOpenAIText = (data: Record<string, unknown>) => {
   return pieces.join("\n").trim();
 };
 
+const extractReplacement = (content: string) => {
+  const match = content.match(/【建议替换】\s*([\s\S]*?)(?=\n\s*【|$)/);
+  return match?.[1]?.trim() || "";
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, error: "Method not allowed" }, 405);
@@ -235,13 +290,20 @@ Deno.serve(async (req) => {
   const mode = String(body.mode || "check");
   if (!modes.has(mode)) return json({ ok: false, error: "未知 Muse 陪译模式" }, 400);
   body.mode = mode;
+  if (mode === "selection") {
+    const action = String(body.selectionAction || "ask");
+    if (!["ask", "explain", "polish"].includes(action)) return json({ ok: false, error: "未知选区操作" }, 400);
+    if (!clip(body.selectedText, 1800)) return json({ ok: false, error: "请先框选一小段文字" }, 400);
+    body.selectionAction = action;
+  }
 
   try {
     const apiKey = Deno.env.get("OPENAI_API_KEY")?.trim();
     const model = Deno.env.get("OPENAI_MODEL")?.trim();
     const baseUrl = (Deno.env.get("OPENAI_BASE_URL")?.trim() || "https://api.openai.com/v1").replace(/\/+$/, "");
     if (!apiKey || !model || model.toLowerCase() === "mock") {
-      return json({ ok: true, mode, content: mockContent(mode), createdAt: new Date().toISOString(), mock: true });
+      const content = mockContent(mode, body);
+      return json({ ok: true, mode, content, replacement: mode === "selection" && body.selectionAction === "polish" ? extractReplacement(content) : "", createdAt: new Date().toISOString(), mock: true });
     }
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -270,7 +332,8 @@ Deno.serve(async (req) => {
     }
 
     const content = extractOpenAIText(data);
-    return json({ ok: true, mode, content: content || mockContent(mode), createdAt: new Date().toISOString() });
+    const finalContent = content || mockContent(mode, body);
+    return json({ ok: true, mode, content: finalContent, replacement: mode === "selection" && body.selectionAction === "polish" ? extractReplacement(finalContent) : "", createdAt: new Date().toISOString() });
   } catch (error) {
     return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 500);
   }

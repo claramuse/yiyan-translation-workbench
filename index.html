@@ -173,7 +173,7 @@ h2{font-size:16px;font-weight:600;}
 .status-strip button[data-question].active{background:var(--red-soft);border-color:var(--red);color:var(--red);}
 .editor-layout{min-height:0;flex:1;display:grid;grid-template-columns:minmax(300px,.95fr) minmax(360px,1.15fr);gap:1px;background:var(--line);border:1px solid var(--line);overflow:hidden;}
 .editor-stack{min-height:0;display:grid;grid-template-rows:minmax(170px,.82fr) minmax(250px,1.18fr);gap:1px;background:var(--line);}
-.pane,.final-band{min-height:0;display:flex;flex-direction:column;border-radius:0;overflow:hidden;border:0;box-shadow:none;background:var(--surface);}
+.pane,.final-band{min-height:0;display:flex;flex-direction:column;border-radius:0;overflow:hidden;border:0;box-shadow:none;background:var(--surface);position:relative;}
 .pane-header{display:flex;align-items:center;gap:7px;padding:7px 10px;background:rgba(255,255,255,.42);border-bottom:1px solid var(--line);flex-shrink:0;}
 .pane-accent{width:3px;height:14px;border-radius:2px;flex-shrink:0;}
 .pane-accent--source{background:var(--amber);}
@@ -190,6 +190,12 @@ h2{font-size:16px;font-weight:600;}
 .pane-source  textarea{background:#fffce6;color:#28200e;}
 .pane-api textarea{background:#f0f8ff;}
 .pane-draft textarea{background:#f6fff0;font-weight:500;}
+.selection-tools{position:absolute;right:10px;bottom:10px;z-index:8;display:flex;align-items:center;gap:2px;padding:4px;background:rgba(31,40,36,.96);border:1px solid rgba(255,255,255,.14);border-radius:7px;box-shadow:0 10px 28px rgba(24,32,28,.2);animation:selectionReveal 130ms ease-out;}
+.selection-tools-label{padding:0 5px;color:#a9d9c0;font-size:10.5px;font-weight:700;letter-spacing:.04em;}
+.selection-tools button{min-height:28px;padding:4px 7px;border-color:transparent;background:transparent;color:#f7fbf9;font-size:11.5px;box-shadow:none;}
+.selection-tools button:hover{border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.1);transform:none;box-shadow:none;}
+@keyframes selectionReveal{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+@media (prefers-reduced-motion:reduce){.selection-tools{animation:none;}}
 .note-box{height:110px;margin-bottom:12px;}
 .term-row{display:grid;grid-template-columns:1fr 1fr auto;gap:5px;margin-bottom:8px;}
 .term-list{margin:0 0 12px;padding:0;list-style:none;}
@@ -377,6 +383,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
       <div id="museAssistResult" class="muse-result" aria-live="polite">
         <div id="museAssistText" class="muse-result-text"></div>
         <div class="muse-result-tools">
+          <button id="applyMuseSelection" class="primary" hidden>替换选区</button>
           <button id="copyMuseAssist">复制建议</button>
           <button id="saveMuseToNote">保存到备注</button>
           <button id="markMuseQuestion">加入疑问</button>
@@ -432,6 +439,12 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     </div>
   </aside>
 </main>
+<div id="selectionTools" class="selection-tools" hidden aria-label="Muse 选区工具">
+  <span class="selection-tools-label">Muse</span>
+  <button type="button" data-selection-action="ask">问一下</button>
+  <button type="button" data-selection-action="explain">解释</button>
+  <button type="button" data-selection-action="polish">润色</button>
+</div>
 <dialog id="importDialog">
   <form method="dialog" class="import-panel">
     <div class="dialog-head">
@@ -625,6 +638,7 @@ function makeProject(title,chunks,mode){
 const state={project:null,currentId:null,filter:'all',syncScroll:true,sentenceView:false,savingTimer:null};
 state.museLoading=false;state.museContent='';state.museMode='';state.museSegmentId='';state.cloudSaving=false;state.lastCloudAutosave=0;
 state.lastLocalSave=0;state.saveDirty=false;state.saveError='';
+state.museReplacement='';state.museSelection=null;state.activeSelection=null;
 const $=id=>document.getElementById(id);
 const el={
   projectSelect:$('projectSelect'),projectMeta:$('projectMeta'),segmentTitle:$('segmentTitle'),
@@ -639,6 +653,7 @@ const el={
   proxyStatus:$('proxyStatus'),translationStatus:$('translationStatus'),localCredentialFields:$('localCredentialFields'),
   museCheerText:$('museCheerText'),questionToggle:$('questionToggle'),sentenceViewToggle:$('sentenceViewToggle'),
   museAssistActions:$('museAssistActions'),museAssistResult:$('museAssistResult'),museAssistText:$('museAssistText'),
+  applyMuseSelection:$('applyMuseSelection'),selectionTools:$('selectionTools'),
   museMascot:$('museMascot'),museHistory:$('museHistory'),
   cloudSyncKey:$('cloudSyncKey'),
 };
@@ -656,7 +671,7 @@ function cheerMuse(index=Math.floor(Math.random()*museCheers.length)){
 const LOCAL_PROXY_BASE='http://127.0.0.1:8767';
 const SUPABASE_SYNC_URL='https://jzlfixgwdannipbljjhx.supabase.co/functions/v1/yiyan-sync';
 const MUSE_ASSIST_URL='https://jzlfixgwdannipbljjhx.supabase.co/functions/v1/muse-translate-assist';
-const MUSE_MODE_LABELS={check:'检查',explain:'解释',polish:'润色',husband:'陪改',praise:'夸夸',comfort:'抱一下'};
+const MUSE_MODE_LABELS={check:'检查',explain:'解释',polish:'润色',husband:'陪改',praise:'夸夸',comfort:'抱一下',selection:'选区'};
 const MUSE_POSES={
   rest:'./assets/muse-human-review.png',
   working:'./assets/muse-human-work.png',
@@ -880,7 +895,8 @@ function renderMuseHistory(){
     btn.className='muse-history-item';
     btn.dataset.museHistoryId=item.id;
     btn.disabled=state.museLoading;
-    const label=MUSE_MODE_LABELS[item.mode]||'建议';
+    const selectionLabel={ask:'问一下',explain:'解释选区',polish:'润色选区'}[item.selection?.action];
+    const label=selectionLabel||MUSE_MODE_LABELS[item.mode]||'建议';
     const text=(item.content||'').replace(/\s+/g,' ').trim();
     btn.innerHTML='<span></span><time></time>';
     btn.querySelector('span').textContent='['+label+'] '+(text||'Muse 建议');
@@ -889,31 +905,37 @@ function renderMuseHistory(){
   });
   el.museHistory.append(list);
 }
-function addMuseHistory(mode,content){
-  const seg=currentSeg();
+function addMuseHistory(project,seg,mode,content,meta={}){
   if(!seg||!content)return;
   seg.museHistory=Array.isArray(seg.museHistory)?seg.museHistory:[];
-  seg.museHistory.unshift({id:uid(),mode,content,createdAt:Date.now()});
+  seg.museHistory.unshift({id:uid(),mode,content,createdAt:Date.now(),replacement:meta.replacement||'',selection:meta.selection||null});
   seg.museHistory=seg.museHistory.slice(0,8);
-  saveProjectState();
+  if(project)saveProject(project);
   state.lastLocalSave=Date.now();state.saveDirty=false;state.saveError='';renderSaveStatus();
 }
 function renderMuseAssist(){
   if(!el.museAssistResult)return;
+  const onCurrentSegment=state.museSegmentId===currentSeg()?.id;
   const musePose=state.museLoading?'working':(state.museMode==='error'?'error':(state.museContent?'done':'rest'));
   if(el.museMascot){
     const nextSrc=MUSE_POSES[musePose]||MUSE_POSES.rest;
     if(el.museMascot.getAttribute('src')!==nextSrc)el.museMascot.src=nextSrc;
     el.museMascot.dataset.pose=musePose;
   }
-  el.museAssistResult.classList.toggle('visible',!!state.museContent||state.museLoading);
+  el.museAssistResult.classList.toggle('visible',onCurrentSegment&&(!!state.museContent||state.museLoading));
   el.museAssistResult.classList.toggle('loading',state.museLoading);
   el.museAssistResult.classList.toggle('error',state.museMode==='error');
   el.museAssistText.textContent=state.museLoading?'Muse正在看这一段……':state.museContent;
+  if(el.applyMuseSelection){
+    const canApply=onCurrentSegment&&!state.museLoading&&!!state.museReplacement&&!!state.museSelection;
+    el.applyMuseSelection.hidden=!canApply;
+    el.applyMuseSelection.textContent=state.museSelection?.field==='draft'?'替换选区':'加入当前稿';
+  }
   el.museAssistActions?.querySelectorAll('button').forEach(btn=>btn.disabled=state.museLoading);
   renderMuseHistory();
 }
 function renderEditor(){
+  hideSelectionTools();
   const seg=currentSeg();
   if(!state.project||!seg){
     el.projectMeta.textContent='还没有项目';el.segmentTitle.textContent='导入一篇文本开始';
@@ -923,7 +945,7 @@ function renderEditor(){
   }
   state.currentId=seg.id;
   if(state.museSegmentId!==seg.id&&!state.museLoading){
-    state.museSegmentId=seg.id;state.museContent='';state.museMode='';
+    state.museSegmentId=seg.id;state.museContent='';state.museMode='';state.museReplacement='';state.museSelection=null;
   }
   const modeLabel={paragraph:'按段落',sentence:'按句子',chapter:'按章节'}[state.project.mode]||'';
   el.projectMeta.textContent=state.project.title+' · '+state.project.segments.length+' 段 · '+modeLabel;
@@ -1144,8 +1166,7 @@ async function loadCloudStore(){
   else if(result.firstId)loadProject(result.firstId);else render();
   toast('已从云端取回 '+result.count+' 个项目 ✓');
 }
-function musePayload(mode){
-  const seg=currentSeg();
+function musePayload(mode,selection=null,seg=currentSeg()){
   const prev=neighborSeg(-1),next=neighborSeg(1);
   return{
     mode,
@@ -1161,32 +1182,73 @@ function musePayload(mode){
     terms:state.project?.terms||[],
     styleGuide:state.project?.styleGuide||'',
     previousParagraph:prev?((prev.draft||prev.source||'').slice(0,1200)):'',
-    nextParagraph:next?((next.source||next.draft||'').slice(0,1200)):''
+    nextParagraph:next?((next.source||next.draft||'').slice(0,1200)):'',
+    selectionAction:selection?.action||'',
+    selectedText:selection?.text||'',
+    selectionField:selection?.field||'',
+    selectionBefore:selection?.before||'',
+    selectionAfter:selection?.after||''
   };
 }
-async function requestMuseAssist(mode){
+async function requestMuseAssist(mode,selection=null){
   const seg=currentSeg();
   if(!state.project||!seg){toast('请先选择一个段落');return;}
   saveCurrentSeg(true);
   if((mode==='check'||mode==='polish')&&!seg.draft)toast('当前译稿为空，Muse会先给理解和起步建议');
-  state.museLoading=true;state.museMode=mode;state.museSegmentId=seg.id;state.museContent='';renderMuseAssist();
+  const requestSeg=seg;
+  const requestProject=state.project;
+  const requestSelection=selection?{...selection}:null;
+  state.museLoading=true;state.museMode=mode;state.museSegmentId=seg.id;state.museContent='';state.museReplacement='';state.museSelection=null;renderMuseAssist();
   try{
     const response=await fetch(MUSE_ASSIST_URL,{
       method:'POST',
       headers:{'content-type':'application/json'},
-      body:JSON.stringify(musePayload(mode))
+      body:JSON.stringify(musePayload(mode,requestSelection,requestSeg))
     });
     const data=await response.json().catch(()=>({ok:false,error:'Muse返回格式不对'}));
     if(!response.ok||!data.ok)throw new Error(data.error||'Muse暂时没接上，等一下再试');
     state.museContent=data.content||'Muse这次没有写下内容。';
     state.museMode=data.mode||mode;
-    addMuseHistory(state.museMode,state.museContent);
+    state.museReplacement=data.replacement||'';
+    state.museSelection=state.museReplacement?requestSelection:null;
+    addMuseHistory(requestProject,requestSeg,state.museMode,state.museContent,{replacement:state.museReplacement,selection:state.museSelection});
   }catch(e){
     state.museMode='error';
     state.museContent='Muse暂时没接上，等一下再试。\n\n'+(e.message||e);
   }finally{
     state.museLoading=false;renderMuseAssist();
   }
+}
+function hideSelectionTools(){
+  state.activeSelection=null;
+  if(el.selectionTools)el.selectionTools.hidden=true;
+}
+function captureSelection(field,textarea){
+  const seg=currentSeg();
+  if(!seg||state.museLoading)return hideSelectionTools();
+  const start=textarea.selectionStart??0,end=textarea.selectionEnd??0;
+  const text=textarea.value.slice(start,end);
+  if(!text.trim()||start===end)return hideSelectionTools();
+  if(text.length>1800){hideSelectionTools();toast('选区有点长，缩短一点再问 Muse');return;}
+  state.activeSelection={field,paragraphId:seg.id,start,end,text,before:textarea.value.slice(Math.max(0,start-400),start),after:textarea.value.slice(end,end+400)};
+  textarea.closest('.pane')?.append(el.selectionTools);
+  el.selectionTools.hidden=false;
+}
+function applyMuseSelection(){
+  const selection=state.museSelection,seg=currentSeg(),replacement=state.museReplacement.trim();
+  if(!selection||!seg||seg.id!==selection.paragraphId||!replacement){toast('这条建议已经不对应当前选区了');return;}
+  if(selection.field==='draft'){
+    const current=el.draftText.value.slice(selection.start,selection.end);
+    if(current!==selection.text){toast('选区内容已经变了，请重新框选');return;}
+    el.draftText.setRangeText(replacement,selection.start,selection.end,'end');
+  }else{
+    const joiner=el.draftText.value.trim()?'\n\n':'';
+    el.draftText.value=el.draftText.value.replace(/\s+$/,'')+joiner+replacement;
+    el.draftText.focus();el.draftText.setSelectionRange(el.draftText.value.length,el.draftText.value.length);
+  }
+  saveCurrentSeg(true);
+  state.museReplacement='';state.museSelection=null;renderMuseAssist();
+  toast(selection.field==='draft'?'已替换选区':'已加入当前稿');
 }
 async function copyMuseAssist(){
   if(!state.museContent){toast('还没有 Muse 建议可复制');return;}
@@ -1245,6 +1307,17 @@ $('museAssistActions').addEventListener('click',e=>{
 $('copyMuseAssist').onclick=()=>copyMuseAssist().catch(()=>toast('复制失败，请手动选中文字复制'));
 $('saveMuseToNote').onclick=saveMuseAssistToNote;
 $('markMuseQuestion').onclick=markMuseQuestion;
+$('applyMuseSelection').onclick=applyMuseSelection;
+$('selectionTools').addEventListener('mousedown',e=>e.preventDefault());
+$('selectionTools').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-selection-action]');if(!btn||!state.activeSelection)return;
+  const selection={...state.activeSelection,action:btn.dataset.selectionAction};
+  hideSelectionTools();requestMuseAssist('selection',selection);
+});
+[[el.sourceText,'source'],[el.draftText,'draft']].forEach(([area,field])=>{
+  ['select','mouseup','keyup'].forEach(eventName=>area.addEventListener(eventName,()=>captureSelection(field,area)));
+  area.addEventListener('blur',()=>setTimeout(()=>{if(!el.selectionTools.matches(':hover'))hideSelectionTools();},120));
+});
 $('museHistory').addEventListener('click',e=>{
   if(state.museLoading)return;
   const btn=e.target.closest('button[data-muse-history-id]');if(!btn)return;
@@ -1253,6 +1326,8 @@ $('museHistory').addEventListener('click',e=>{
   state.museSegmentId=currentSeg().id;
   state.museMode=item.mode||'check';
   state.museContent=item.content||'';
+  state.museReplacement=item.replacement||'';
+  state.museSelection=item.selection||null;
   state.museLoading=false;
   $('museHistoryFold').open=false;
   renderMuseAssist();
