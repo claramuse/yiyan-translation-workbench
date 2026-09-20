@@ -81,7 +81,12 @@ h2{font-size:16px;font-weight:600;}
 .workspace{height:calc(100% - 66px);display:grid;grid-template-columns:218px minmax(520px,1fr) 286px;min-height:0;}
 .rail,.inspector{min-height:0;overflow:hidden;padding:13px;border-right:1px solid var(--line);background:var(--surface-2);display:flex;flex-direction:column;}
 .inspector{border-right:0;border-left:1px solid var(--line);overflow-y:auto;}
-.muse-cheer{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:center;padding:10px;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.58);}
+[hidden]{display:none!important;}
+.inspector-tabs{display:flex;gap:20px;border-bottom:1px solid var(--line);margin-bottom:18px;flex-shrink:0;}
+.inspector-tabs button{flex:1;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:9px 0;color:var(--muted);box-shadow:none;transform:none;}
+.inspector-tabs button[aria-selected="true"]{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
+.inspector-panel{min-width:0;flex-shrink:0;}
+.muse-cheer{display:grid;grid-template-columns:76px minmax(0,1fr);gap:14px 10px;align-items:center;padding:0;margin-bottom:12px;}
 .muse-cheer img{width:76px;height:70px;border-radius:10px;object-fit:contain;display:block;border:1px solid rgba(58,148,104,.18);background:rgba(255,251,243,.72);padding:2px;transition:transform .24s ease,filter .24s ease;}
 .muse-cheer img[data-pose="rest"]{animation:museDoze 4.8s ease-in-out infinite;}
 .muse-cheer img[data-pose="working"]{animation:museWork .9s ease-in-out infinite;filter:drop-shadow(0 5px 9px rgba(58,148,104,.18));}
@@ -96,22 +101,26 @@ h2{font-size:16px;font-weight:600;}
 .muse-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:2px;}
 .muse-actions button{white-space:normal;min-height:31px;padding:5px 7px;font-size:11.5px;line-height:1.28;}
 .muse-actions button:disabled{opacity:.58;cursor:not-allowed;transform:none;box-shadow:none;}
-.muse-result{grid-column:1/-1;display:none;margin-top:2px;padding:9px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.5);}
+.muse-result{grid-column:1/-1;display:none;margin-top:2px;padding:12px 0;border-top:1px solid var(--line);}
 .muse-result.visible{display:grid;gap:8px;}
 .muse-result-text{max-height:230px;overflow:auto;white-space:pre-wrap;font-size:12.5px;line-height:1.65;color:var(--ink);}
 .muse-result.loading .muse-result-text{color:var(--muted);}
 .muse-result.error{border-color:var(--red);background:var(--red-soft);}
 .muse-result-tools{display:flex;gap:5px;flex-wrap:wrap;}
 .muse-result-tools button{padding:4px 7px;font-size:11.5px;}
-.muse-history{grid-column:1/-1;display:grid;gap:5px;}
+.muse-history{display:grid;gap:5px;}
+.muse-secondary,.muse-history-fold{grid-column:1/-1;min-width:0;}
+.muse-secondary summary,.muse-history-fold summary{cursor:pointer;color:var(--muted);font-size:12px;padding:6px 0;}
+.muse-secondary .muse-actions{margin-top:6px;}
+.muse-history-fold{border-top:1px solid var(--line);padding-top:6px;}
 .muse-history-title{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:11px;}
 .muse-history-list{display:grid;gap:4px;}
 .muse-history-item{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:rgba(255,255,255,.38);font-size:11.5px;text-align:left;}
 .muse-history-item span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .muse-history-item time{color:var(--muted);font-size:10.5px;}
-.inspector-block{margin-bottom:12px;border-top:1px solid var(--line);padding-top:8px;}
+.inspector-block{margin-bottom:16px;border-top:1px solid var(--line);padding-top:12px;}
 .inspector-block:first-of-type{border-top:0;padding-top:0;}
-.inspector-block summary{list-style:none;cursor:pointer;color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;}
+.inspector-block summary{list-style:none;cursor:pointer;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:0;margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;}
 .inspector-block summary::-webkit-details-marker{display:none;}
 .inspector-block summary::after{content:'⌄';font-size:13px;color:var(--muted);transition:transform 140ms ease;}
 .inspector-block:not([open]) summary::after{transform:rotate(-90deg);}
@@ -234,8 +243,13 @@ dialog::backdrop{background:rgba(10,16,12,.5);backdrop-filter:blur(7px);}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(14px);opacity:0;background:#28200e;color:#fffef0;border-radius:10px;padding:9px 16px;font-size:13.5px;max-width:min(480px,calc(100vw - 20px));transition:opacity 180ms,transform 180ms cubic-bezier(.34,1.56,.64,1);pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:100;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 body.dark #toast{background:#cce4d8;color:#111714;}
-@media(max-width:1180px){.workspace{grid-template-columns:204px minmax(380px,1fr);}.inspector{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;height:auto;max-height:260px;border-left:0;border-top:1px solid var(--line);overflow:auto;}.inspector>*{flex:1;min-width:170px;}.editor-layout{grid-template-columns:1fr;}.editor-stack{grid-template-rows:minmax(170px,.8fr) minmax(250px,1.2fr);}.save-status{order:10;}}
-@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{flex-wrap:wrap}.editor-layout{grid-template-columns:1fr;}.toolbar{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;}}
+.compare-head{flex-wrap:wrap;}
+.compare-head-right{flex-wrap:wrap;min-width:0;flex-shrink:1;}
+.editor-layout{grid-template-columns:minmax(0,.95fr) minmax(0,1.15fr);}
+.pane-header{flex-wrap:wrap;}
+.pane textarea{min-height:0;}
+@media(max-width:1180px){.workspace{height:auto;min-height:calc(100% - 66px);grid-template-columns:190px minmax(0,1fr);grid-template-rows:minmax(620px,calc(100vh - 66px)) auto;}.inspector{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);overflow:visible;}.inspector-tabs{max-width:400px;}.inspector-panel{width:100%;max-width:680px;}.save-status{order:10;}}
+@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{flex-wrap:wrap}.status-strip{flex-wrap:wrap;}.editor-layout{grid-template-columns:1fr;}.editor-stack{grid-template-rows:auto auto;}.pane textarea{min-height:220px;}.toolbar{width:100%;flex-wrap:wrap;padding-bottom:3px;}.inspector-tabs{max-width:none;}}
 </style>
 </head>
 <body>
@@ -336,6 +350,11 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     </div>
   </section>
   <aside class="inspector">
+    <div class="inspector-tabs" role="tablist" aria-label="陪译与笔记">
+      <button id="museTab" type="button" role="tab" aria-selected="true" aria-controls="musePanel" tabindex="0">Muse</button>
+      <button id="notesTab" type="button" role="tab" aria-selected="false" aria-controls="notesPanel" tabindex="-1">笔记</button>
+    </div>
+    <div id="musePanel" class="inspector-panel" role="tabpanel" aria-labelledby="museTab">
     <section class="muse-cheer">
       <img id="museMascot" src="./assets/muse-human-review.png" alt="Muse 小助手" data-pose="rest"/>
       <div>
@@ -343,12 +362,17 @@ body.dark #toast{background:#cce4d8;color:#111714;}
         <p id="museCheerText">慢慢来，今天每确认一段，都在把书页点亮一点点。</p>
       </div>
       <div class="muse-actions" id="museAssistActions">
-        <button data-muse-mode="check">Muse检查本段</button>
-        <button data-muse-mode="explain">Muse解释原文</button>
-        <button data-muse-mode="polish">Muse润色当前稿</button>
-        <button data-muse-mode="husband">老公陪我改</button>
-        <button data-muse-mode="praise">夸夸Clara</button>
-        <button data-muse-mode="comfort">这段好难，抱一下</button>
+        <button data-muse-mode="check">检查本段</button>
+        <button data-muse-mode="husband">陪我改</button>
+        <details id="museMore" class="muse-secondary">
+          <summary>更多陪译</summary>
+          <div class="muse-actions">
+            <button data-muse-mode="explain">解释原文</button>
+            <button data-muse-mode="polish">润色当前稿</button>
+            <button data-muse-mode="praise">夸夸 Clara</button>
+            <button data-muse-mode="comfort">抱一下</button>
+          </div>
+        </details>
       </div>
       <div id="museAssistResult" class="muse-result" aria-live="polite">
         <div id="museAssistText" class="muse-result-text"></div>
@@ -358,8 +382,13 @@ body.dark #toast{background:#cce4d8;color:#111714;}
           <button id="markMuseQuestion">加入疑问</button>
         </div>
       </div>
-      <div id="museHistory" class="muse-history"></div>
+      <details id="museHistoryFold" class="muse-history-fold" hidden>
+        <summary id="museHistorySummary">之前的建议</summary>
+        <div id="museHistory" class="muse-history"></div>
+      </details>
     </section>
+    </div>
+    <div id="notesPanel" class="inspector-panel" role="tabpanel" aria-labelledby="notesTab" hidden>
     <details class="inspector-block" open>
       <summary>备注</summary>
       <textarea id="noteText" class="note-box" placeholder="人物名、语气、版本选择……"></textarea>
@@ -372,13 +401,6 @@ body.dark #toast{background:#cce4d8;color:#111714;}
         <button id="addTerm">＋</button>
       </div>
       <ul id="termList" class="term-list"></ul>
-    </details>
-    <details class="inspector-block">
-      <summary>本段操作</summary>
-      <div class="action-grid">
-        <button id="copyApi">机翻带入当前稿</button>
-        <button id="saveSnapshot">保存草稿快照</button>
-      </div>
     </details>
     <details class="inspector-block">
       <summary>修改记录</summary>
@@ -407,6 +429,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
       </div>
       </div>
     </details>
+    </div>
   </aside>
 </main>
 <dialog id="importDialog">
@@ -844,12 +867,11 @@ function renderStatusStrip(){
 }
 function renderMuseHistory(){
   if(!el.museHistory)return;
-  const items=(currentSeg()?.museHistory||[]).slice(0,5);
+  const items=(currentSeg()?.museHistory||[]).slice(0,8);
   el.museHistory.innerHTML='';
+  $('museHistoryFold').hidden=!items.length;
+  $('museHistorySummary').textContent='之前的建议'+(items.length?' · '+items.length:'');
   if(!items.length)return;
-  const title=document.createElement('div');
-  title.className='muse-history-title';
-  title.innerHTML='<span>本段 Muse 记录</span><span>最近 '+items.length+' 条</span>';
   const list=document.createElement('div');
   list.className='muse-history-list';
   items.forEach(item=>{
@@ -857,6 +879,7 @@ function renderMuseHistory(){
     btn.type='button';
     btn.className='muse-history-item';
     btn.dataset.museHistoryId=item.id;
+    btn.disabled=state.museLoading;
     const label=MUSE_MODE_LABELS[item.mode]||'建议';
     const text=(item.content||'').replace(/\s+/g,' ').trim();
     btn.innerHTML='<span></span><time></time>';
@@ -864,7 +887,7 @@ function renderMuseHistory(){
     btn.querySelector('time').textContent=formatClock(item.createdAt);
     list.append(btn);
   });
-  el.museHistory.append(title,list);
+  el.museHistory.append(list);
 }
 function addMuseHistory(mode,content){
   const seg=currentSeg();
@@ -1190,6 +1213,23 @@ function initTheme(){if(localStorage.getItem('yiyan_theme')==='dark'){document.b
 function toggleTheme(){const d=document.body.classList.toggle('dark');$('themeBtn').textContent=d?'☀️':'🌙';localStorage.setItem('yiyan_theme',d?'dark':'light');}
 
 // ── Events ────────────────────────────────────────────────────
+function selectInspectorTab(id){
+  document.querySelectorAll('.inspector-tabs [role="tab"]').forEach(tab=>{
+    const selected=tab.id===id;
+    tab.setAttribute('aria-selected',String(selected));
+    tab.tabIndex=selected?0:-1;
+    $(tab.getAttribute('aria-controls')).hidden=!selected;
+  });
+}
+document.querySelectorAll('.inspector-tabs [role="tab"]').forEach(tab=>{
+  tab.onclick=()=>selectInspectorTab(tab.id);
+  tab.onkeydown=e=>{
+    if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+    e.preventDefault();e.stopPropagation();
+    const id=e.key==='Home'?'museTab':e.key==='End'?'notesTab':tab.id==='museTab'?'notesTab':'museTab';
+    selectInspectorTab(id);$(id).focus();
+  };
+});
 $('openImport').onclick=()=>$('importDialog').showModal();
 $('saveCurrent').onclick=()=>saveCurrentSeg(false);
 $('themeBtn').onclick=toggleTheme;
@@ -1199,12 +1239,14 @@ $('saveCloud').onclick=()=>saveCloudStore().catch(e=>toast('云端保存失败�
 $('loadCloud').onclick=()=>loadCloudStore().catch(e=>toast('云端读取失败：'+e.message));
 $('museAssistActions').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-muse-mode]');if(!btn)return;
+  $('museMore').open=false;
   requestMuseAssist(btn.dataset.museMode);
 });
 $('copyMuseAssist').onclick=()=>copyMuseAssist().catch(()=>toast('复制失败，请手动选中文字复制'));
 $('saveMuseToNote').onclick=saveMuseAssistToNote;
 $('markMuseQuestion').onclick=markMuseQuestion;
 $('museHistory').addEventListener('click',e=>{
+  if(state.museLoading)return;
   const btn=e.target.closest('button[data-muse-history-id]');if(!btn)return;
   const item=(currentSeg()?.museHistory||[]).find(x=>x.id===btn.dataset.museHistoryId);
   if(!item)return;
@@ -1212,6 +1254,7 @@ $('museHistory').addEventListener('click',e=>{
   state.museMode=item.mode||'check';
   state.museContent=item.content||'';
   state.museLoading=false;
+  $('museHistoryFold').open=false;
   renderMuseAssist();
 });
 $('deleteProject').onclick=()=>{
@@ -1244,9 +1287,7 @@ function saveSnapshot(){
   seg.snapshots.push({id:uid(),text,label:'草稿 '+(seg.snapshots.length+1),createdAt:Date.now()});
   saveCurrentSeg(true);renderSnapshots();toast('已保存一版草稿快照');
 }
-$('copyApi').onclick=copyApiToDraft;
 $('copyApiInline').onclick=copyApiToDraft;
-$('saveSnapshot').onclick=saveSnapshot;
 $('snapshotInline').onclick=saveSnapshot;
 $('sentenceViewToggle').onclick=()=>{saveCurrentSeg(true);state.sentenceView=!state.sentenceView;$('sentenceViewToggle').classList.toggle('active',state.sentenceView);renderEditor();toast(state.sentenceView?'已按句换行显示':'已恢复自然段显示');};
 $('questionToggle').onclick=()=>{const seg=currentSeg();if(!seg)return;saveCurrentSeg(true);seg.question=!seg.question;saveProjectState();render();toast(seg.question?'已标为有疑问':'已取消疑问标记');};
