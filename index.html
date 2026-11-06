@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap"/>
 <style>
 :root{
-  --paper:#f7f4ed;--surface:#fffdf8;--surface-2:#f1eee6;
+  --paper:#f5f6f3;--surface:#fff;--surface-2:#f0f3f0;
   --ink:#1f2824;--muted:#68736d;--line:#d9ded7;--line-strong:#aab8ae;
   --green:#3a9468;--green-mid:#4ab87c;--green-soft:#ccf0dc;
   --amber:#b87020;--amber-soft:#fde8c0;
@@ -27,8 +27,8 @@
   --font-cn:"Noto Serif SC","Microsoft YaHei",serif;
 }
 body.dark{
-  --paper:#111714;--surface:#1b2420;--surface-2:#161d1a;
-  --ink:#d8e8e2;--muted:#6a8c80;--line:#253028;--line-strong:#304038;
+  --paper:#111815;--surface:#1c2521;--surface-2:#17201c;
+  --ink:#e3ede7;--muted:#a6b9ad;--line:#35453b;--line-strong:#526657;
   --green:#3ab87c;--green-mid:#45cc8c;--green-soft:rgba(58,184,124,.16);
   --amber:#d4921e;--amber-soft:rgba(212,146,30,.16);
   --blue:#4e9fd4;--blue-soft:rgba(78,159,212,.16);
@@ -39,9 +39,11 @@ body.dark{
   --shadow-lg:0 20px 60px rgba(0,0,0,.55);
   --topbar-bg:rgba(22,29,26,.96);
 }
-body.dark .pane-source  textarea{background:#1e1c0a;color:#d8c870;}
-body.dark .pane-api textarea{background:#0c1820;}
-body.dark .pane-draft textarea{background:#0c1a0e;}
+body.dark .pane-source,body.dark .pane-api,body.dark .pane-draft{background:#1c2521;}
+body.dark .pane-header{background:#222e27;}
+body.dark .save-status,body.dark .snapshot-item,body.dark .proxy-status{background:#222e27;}
+body.dark .import-hint{background:#332d1e;color:var(--ink);}
+body.dark .import-hint strong{color:#e6bd7c;}
 body.dark .topbar::after{opacity:.35;}
 body.dark dialog{background:var(--surface);}
 *{box-sizing:border-box;}
@@ -65,15 +67,20 @@ input,select,textarea{border:1px solid var(--line);background:var(--surface);col
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(58,148,104,.12);}
 input,select{height:36px;padding:0 10px;}
 textarea{width:100%;resize:none;padding:13px;line-height:1.82;font-family:var(--font-cn);}
-.topbar{height:66px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--topbar-bg);backdrop-filter:blur(18px);position:sticky;top:0;z-index:20;overflow:hidden;}
-.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2.5px;background:linear-gradient(90deg,var(--mac-rose),var(--mac-lemon),var(--mac-mint),var(--mac-sky),var(--mac-lavender));}
+.topbar{height:66px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--topbar-bg);backdrop-filter:blur(18px);position:sticky;top:0;z-index:20;}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--line);}
 .eyebrow{margin:0 0 2px;color:var(--green);font-size:9.5px;font-weight:700;letter-spacing:.18em;}
 h1,h2{margin:0;font-family:"Crimson Pro","Noto Serif SC",serif;}
 h1{font-size:19px;font-weight:600;}
 h2{font-size:16px;font-weight:600;}
 .toolbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
 .sep{width:1px;height:22px;background:var(--line);margin:0 2px;flex-shrink:0;}
-#themeBtn{padding:5px 9px;font-size:16px;line-height:1;}
+#themeBtn{width:34px;height:32px;padding:4px;font-size:16px;line-height:1;}
+.toolbar-menu{position:relative;}
+.toolbar-menu summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;background:var(--surface);}
+.toolbar-menu summary::-webkit-details-marker{display:none;}
+.toolbar-menu[open] .toolbar-menu-content{position:absolute;right:0;top:calc(100% + 5px);z-index:30;display:grid;gap:4px;min-width:126px;padding:6px;border:1px solid var(--line);border-radius:7px;background:var(--surface);box-shadow:var(--shadow);}
+.toolbar-menu-content button{text-align:left;}
 .save-status{min-width:112px;padding:4px 8px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.48);color:var(--muted);font-size:11.5px;line-height:1.4;text-align:center;white-space:nowrap;}
 .save-status.saving{color:var(--amber);border-color:var(--amber);background:var(--amber-soft);}
 .save-status.saved{color:var(--green);border-color:rgba(58,148,104,.45);background:var(--green-soft);}
@@ -174,7 +181,7 @@ h2{font-size:16px;font-weight:600;}
 .editor-layout{min-height:0;flex:1;display:grid;grid-template-columns:minmax(300px,.95fr) minmax(360px,1.15fr);gap:1px;background:var(--line);border:1px solid var(--line);overflow:hidden;}
 .editor-stack{min-height:0;display:grid;grid-template-rows:minmax(170px,.82fr) minmax(250px,1.18fr);gap:1px;background:var(--line);}
 .pane,.final-band{min-height:0;display:flex;flex-direction:column;border-radius:0;overflow:hidden;border:0;box-shadow:none;background:var(--surface);position:relative;}
-.pane-header{display:flex;align-items:center;gap:7px;padding:7px 10px;background:rgba(255,255,255,.42);border-bottom:1px solid var(--line);flex-shrink:0;}
+.pane-header{display:flex;align-items:center;gap:7px;padding:7px 10px;background:var(--surface-2);border-bottom:1px solid var(--line);flex-shrink:0;}
 .pane-accent{width:3px;height:14px;border-radius:2px;flex-shrink:0;}
 .pane-accent--source{background:var(--amber);}
 .pane-accent--literal{background:var(--blue);}
@@ -186,10 +193,17 @@ h2{font-size:16px;font-weight:600;}
 .pane-copy-btn.visible{opacity:.78;}
 .pane:hover .pane-copy-btn{opacity:.78;}
 .pane-copy-btn:hover{opacity:1!important;color:var(--green);border-color:var(--green);background:var(--green-soft);box-shadow:none;transform:none;}
-.pane textarea{flex:1;min-height:200px;border:0;border-radius:0;box-shadow:none;background:transparent;}
-.pane-source  textarea{background:#fffce6;color:#28200e;}
-.pane-api textarea{background:#f0f8ff;}
-.pane-draft textarea{background:#f6fff0;font-weight:500;}
+.text-surface{position:relative;flex:1;min-height:0;display:flex;overflow:hidden;}
+.text-surface textarea{position:relative;z-index:1;flex:1;min-height:200px;border:0;border-radius:0;box-shadow:none;background:transparent;color:var(--ink);}
+.pane-draft textarea{font-weight:500;}
+.term-mirror{position:absolute;inset:0;overflow:hidden;pointer-events:none;white-space:pre-wrap;overflow-wrap:break-word;color:transparent;font-family:var(--font-cn);line-height:1.82;padding:13px;}
+.term-mirror-content{white-space:pre-wrap;overflow-wrap:break-word;color:transparent;}
+.term-mirror,.text-surface textarea{font-size:15px;letter-spacing:0;tab-size:8;}
+.pane-draft .term-mirror{font-weight:500;}
+.term-mark{border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone;}
+.term-color-0{background:rgba(214,139,72,.32)}.term-color-1{background:rgba(83,170,149,.32)}.term-color-2{background:rgba(102,147,205,.32)}
+.term-color-3{background:rgba(192,121,158,.32)}.term-color-4{background:rgba(172,161,83,.34)}.term-color-5{background:rgba(151,124,196,.32)}
+body.dark .term-mark{filter:brightness(1.3)}
 .selection-tools{position:absolute;right:10px;bottom:10px;z-index:8;display:flex;align-items:center;gap:2px;padding:4px;background:rgba(31,40,36,.96);border:1px solid rgba(255,255,255,.14);border-radius:7px;box-shadow:0 10px 28px rgba(24,32,28,.2);animation:selectionReveal 130ms ease-out;}
 .selection-tools-label{padding:0 5px;color:#a9d9c0;font-size:10.5px;font-weight:700;letter-spacing:.04em;}
 .selection-tools button{min-height:28px;padding:4px 7px;border-color:transparent;background:transparent;color:#f7fbf9;font-size:11.5px;box-shadow:none;}
@@ -203,6 +217,10 @@ h2{font-size:16px;font-weight:600;}
 .term-list li .term-pair{display:flex;gap:4px;flex:1;min-width:0;}
 .term-list li .term-source{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .term-list li .term-target{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.term-list li .term-swatch{width:10px;height:10px;border-radius:2px;flex:none;align-self:center;}
+.term-list li .term-pair{align-items:center;}
+.quiet-details{border-top:1px solid var(--line);margin-top:8px;padding-top:4px;}
+.quiet-details summary{cursor:pointer;color:var(--muted);font-size:12px;padding:5px 0;}
 .term-list li .del-term{padding:1px 5px;font-size:11px;opacity:0;border-color:transparent;background:transparent;color:var(--muted);transition:opacity 110ms;flex-shrink:0;}
 .term-list li:hover .del-term{opacity:1;}
 .term-list li .del-term:hover{color:var(--red);border-color:var(--red-soft);background:var(--red-soft);transform:none;box-shadow:none;}
@@ -255,7 +273,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
 .pane-header{flex-wrap:wrap;}
 .pane textarea{min-height:0;}
 @media(max-width:1180px){.workspace{height:auto;min-height:calc(100% - 66px);grid-template-columns:190px minmax(0,1fr);grid-template-rows:minmax(620px,calc(100vh - 66px)) auto;}.inspector{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);overflow:visible;}.inspector-tabs{max-width:400px;}.inspector-panel{width:100%;max-width:680px;}.save-status{order:10;}}
-@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{flex-wrap:wrap}.status-strip{flex-wrap:wrap;}.editor-layout{grid-template-columns:1fr;}.editor-stack{grid-template-rows:auto auto;}.pane textarea{min-height:220px;}.toolbar{width:100%;flex-wrap:wrap;padding-bottom:3px;}.inspector-tabs{max-width:none;}}
+@media(max-width:780px){.topbar{height:auto;flex-direction:column;align-items:flex-start;padding:11px;}.workspace{height:auto;display:block;}.rail,.inspector{height:auto;border:0;border-bottom:1px solid var(--line);overflow:visible;}.rail-section.grow{height:170px;}.segmented{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));}.segmented button{min-width:0;}.compare{min-height:calc(100vh - 180px);}.compare-head{flex-direction:column;align-items:flex-start;}.compare-head-right{width:100%;flex-wrap:wrap}.status-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));width:100%;}.status-strip button{min-width:0;padding:4px 2px;}.editor-layout{grid-template-columns:1fr;}.editor-stack{grid-template-rows:auto auto;}.pane textarea{min-height:220px;}.toolbar{width:100%;flex-wrap:wrap;padding-bottom:3px;}.inspector-tabs{max-width:none;}}
 </style>
 </head>
 <body>
@@ -268,10 +286,11 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     <button id="openImport" class="primary">＋ 导入</button>
     <button id="saveCurrent">保存</button>
     <div id="saveStatus" class="save-status" aria-live="polite">本机已就绪</div>
-    <div class="sep"></div>
-    <button id="exportHtml">导出 HTML</button>
-    <button id="exportTxt">导出 TXT</button>
-    <button id="themeBtn">🌙</button>
+    <details class="toolbar-menu" id="exportMenu"><summary>导出</summary><div class="toolbar-menu-content">
+      <button id="exportHtml">导出 HTML</button>
+      <button id="exportTxt">导出 TXT</button>
+    </div></details>
+    <button id="themeBtn" class="ghost" type="button" title="切换夜间模式" aria-label="切换夜间模式">☾</button>
   </div>
 </header>
 <main class="workspace">
@@ -279,7 +298,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
     <div class="rail-section">
       <div class="section-label">项目</div>
       <select id="projectSelect"></select>
-      <div class="cloud-sync">
+      <details class="quiet-details"><summary>云端同步</summary><div class="cloud-sync">
         <input id="cloudSyncKey" type="password" placeholder="云同步码，自己取一个"/>
         <div class="project-actions">
           <button id="saveCloud" class="ghost">存到云端</button>
@@ -288,7 +307,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
       </div>
       <div style="display:flex;gap:4px;margin-top:5px;">
         <button id="deleteProject" class="ghost danger" style="flex:1;font-size:11.5px;">删除项目</button>
-      </div>
+      </div></details>
     </div>
     <div class="rail-section">
       <div class="section-label">筛选</div>
@@ -333,7 +352,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
           <div class="pane-accent pane-accent--source"></div>
           <span class="pane-title">原文</span><span class="pane-sub">Source</span>
         </div>
-        <textarea id="sourceText" readonly></textarea>
+        <div class="text-surface"><div class="term-mirror" aria-hidden="true"><div class="term-mirror-content" id="sourceMirror"></div></div><textarea id="sourceText" readonly></textarea></div>
       </article>
       <div class="editor-stack">
         <article class="pane pane-api">
@@ -342,7 +361,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
             <span class="pane-title">API 机翻参考</span><span class="pane-sub">Reference</span>
             <button class="pane-copy-btn" id="copyApiInline">带入当前稿</button>
           </div>
-          <textarea id="apiText" readonly placeholder="点击“机翻当前段”后，这里会直接出现参考译文。"></textarea>
+          <div class="text-surface"><div class="term-mirror" aria-hidden="true"><div class="term-mirror-content" id="apiMirror"></div></div><textarea id="apiText" readonly placeholder="点击“机翻当前段”后，这里会直接出现参考译文。"></textarea></div>
         </article>
         <article class="pane pane-draft">
           <div class="pane-header">
@@ -350,7 +369,7 @@ body.dark #toast{background:#cce4d8;color:#111714;}
             <span class="pane-title">我的当前译稿</span><span class="pane-sub">Working draft</span>
             <button class="pane-copy-btn visible" id="snapshotInline">保存快照</button>
           </div>
-          <textarea id="draftText" placeholder="把你现在正在改的译文放这里。需要留痕时，点“保存快照”。"></textarea>
+          <div class="text-surface"><div class="term-mirror" aria-hidden="true"><div class="term-mirror-content" id="draftMirror"></div></div><textarea id="draftText" placeholder="把你现在正在改的译文放这里。需要留痕时，点“保存快照”。"></textarea></div>
         </article>
       </div>
     </div>
@@ -819,12 +838,49 @@ function renderTerms(){
   el.termList.innerHTML='';
   (state.project?.terms||[]).forEach((t,i)=>{
     const li=document.createElement('li');
-    li.innerHTML='<div class="term-pair"><span class="term-source"></span><span>→</span><strong class="term-target"></strong></div><button class="del-term ghost">✕</button>';
+    li.innerHTML='<div class="term-pair"><span class="term-swatch"></span><span class="term-source"></span><span>→</span><strong class="term-target"></strong></div><button class="del-term ghost" aria-label="删除术语">✕</button>';
+    li.querySelector('.term-swatch').className='term-swatch term-color-'+(i%6);
     li.querySelector('.term-source').textContent=t.source;
     li.querySelector('.term-target').textContent=t.target;
     li.querySelector('.del-term').onclick=()=>{state.project.terms.splice(i,1);saveProjectState();renderTerms();toast('术语已删除');};
     el.termList.append(li);
   });
+  renderTermMirrors();
+}
+function termPatterns(){
+  const patterns=[];
+  (state.project?.terms||[]).forEach((term,index)=>{
+    [term.source,term.target].forEach(raw=>{
+      const word=String(raw||'').trim();
+      if(word&&!patterns.some(item=>item.word.toLocaleLowerCase()===word.toLocaleLowerCase()))patterns.push({word,color:index%6});
+    });
+  });
+  return patterns.sort((a,b)=>b.word.length-a.word.length);
+}
+function renderTermMirror(area,mirror,patterns){
+  if(!area||!mirror)return;
+  const value=area.value,lower=value.toLocaleLowerCase(),fragment=document.createDocumentFragment();
+  let cursor=0,plain=0;
+  for(let i=0;i<value.length;){
+    const found=patterns.find(item=>{
+      const word=item.word,latin=/^[A-Za-z0-9]/.test(word)&&/[A-Za-z0-9]$/.test(word);
+      if(lower.slice(i,i+word.length)!==word.toLocaleLowerCase())return false;
+      return !latin||(!/[A-Za-z0-9]/.test(value[i-1]||'')&&!/[A-Za-z0-9]/.test(value[i+word.length]||''));
+    });
+    if(!found){i++;continue;}
+    if(i>plain)fragment.append(document.createTextNode(value.slice(plain,i)));
+    const mark=document.createElement('span');mark.className='term-mark term-color-'+found.color;
+    mark.textContent=value.slice(i,i+found.word.length);fragment.append(mark);
+    i+=found.word.length;plain=i;
+  }
+  if(plain<value.length)fragment.append(document.createTextNode(value.slice(plain)));
+  mirror.replaceChildren(fragment);
+  mirror.parentElement.scrollTop=area.scrollTop;
+  mirror.parentElement.scrollLeft=area.scrollLeft;
+}
+function renderTermMirrors(){
+  const patterns=termPatterns();
+  [[el.sourceText,$('sourceMirror')],[el.apiText,$('apiMirror')],[el.draftText,$('draftMirror')]].forEach(([area,mirror])=>renderTermMirror(area,mirror,patterns));
 }
 function formatSnapshotTime(ts){
   try{return new Date(ts).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch{return'刚刚';}
@@ -873,6 +929,7 @@ function renderTextAreas(seg){
   el.sourceText.value=sentenceDisplay(seg.source||'');
   el.apiText.value=sentenceDisplay(seg.apiTranslation||'');
   el.draftText.value=sentenceDisplay(seg.draft||'');
+  renderTermMirrors();
 }
 function renderStatusStrip(){
   const seg=currentSeg();
@@ -940,6 +997,7 @@ function renderEditor(){
   if(!state.project||!seg){
     el.projectMeta.textContent='还没有项目';el.segmentTitle.textContent='导入一篇文本开始';
     [el.sourceText,el.apiText,el.draftText,el.noteText].forEach(a=>a.value='');
+    renderTermMirrors();
     if(el.snapshotList)el.snapshotList.innerHTML='';
     el.statusStrip.querySelectorAll('button').forEach(b=>b.classList.remove('active'));renderMuseAssist();return;
   }
@@ -962,6 +1020,7 @@ function saveProjectState(){if(!state.project)return;saveProject(state.project);
 function saveCurrentSeg(quiet=false){
   const seg=currentSeg();if(!state.project||!seg)return;
   seg.draft=state.sentenceView?naturalText(el.draftText.value):el.draftText.value;
+  renderTermMirrors();
   seg.note=el.noteText.value;
   if(seg.draft&&seg.stage==='pending')seg.stage='drafting';
   rememberPlace();
@@ -1271,8 +1330,9 @@ function markMuseQuestion(){
 }
 
 // ── Theme ─────────────────────────────────────────────────────
-function initTheme(){if(localStorage.getItem('yiyan_theme')==='dark'){document.body.classList.add('dark');$('themeBtn').textContent='☀️';}}
-function toggleTheme(){const d=document.body.classList.toggle('dark');$('themeBtn').textContent=d?'☀️':'🌙';localStorage.setItem('yiyan_theme',d?'dark':'light');}
+function syncThemeButton(){const dark=document.body.classList.contains('dark');$('themeBtn').textContent=dark?'☀':'☾';$('themeBtn').title=dark?'切换日间模式':'切换夜间模式';$('themeBtn').setAttribute('aria-label',$('themeBtn').title);}
+function initTheme(){if(localStorage.getItem('yiyan_theme')==='dark')document.body.classList.add('dark');syncThemeButton();}
+function toggleTheme(){const d=document.body.classList.toggle('dark');localStorage.setItem('yiyan_theme',d?'dark':'light');syncThemeButton();}
 
 // ── Events ────────────────────────────────────────────────────
 function selectInspectorTab(id){
@@ -1343,6 +1403,8 @@ $('importWord').onclick=()=>importWord().catch(e=>toast(e.message));
 $('importText').onclick=()=>importText();
 el.projectSelect.onchange=e=>loadProject(e.target.value);
 [el.draftText,el.noteText].forEach(a=>a.addEventListener('input',debounceSave));
+el.draftText.addEventListener('input',renderTermMirrors);
+[[el.sourceText,$('sourceMirror')],[el.apiText,$('apiMirror')],[el.draftText,$('draftMirror')]].forEach(([area,mirror])=>area.addEventListener('scroll',()=>{mirror.parentElement.scrollTop=area.scrollTop;mirror.parentElement.scrollLeft=area.scrollLeft;}));
 $('filterBar').addEventListener('click',e=>{
   const btn=e.target.closest('button[data-filter]');if(!btn)return;
   state.filter=btn.dataset.filter;
@@ -1354,7 +1416,7 @@ el.statusStrip.addEventListener('click',e=>{
   const seg=currentSeg();if(!seg)return;
   saveCurrentSeg(true);seg.stage=btn.dataset.stage;saveProjectState();render();toast('已标为「'+btn.textContent+'」');
 });
-function copyApiToDraft(){if(!el.apiText.value){toast('这段还没有机翻参考');return;}el.draftText.value=el.apiText.value;debounceSave();toast('已把机翻带入当前稿');}
+function copyApiToDraft(){if(!el.apiText.value){toast('这段还没有机翻参考');return;}el.draftText.value=el.apiText.value;renderTermMirrors();debounceSave();toast('已把机翻带入当前稿');}
 function saveSnapshot(){
   const seg=currentSeg();if(!seg)return;
   const text=el.draftText.value.trim();if(!text){toast('当前稿还是空的，先写一点再留快照');return;}
